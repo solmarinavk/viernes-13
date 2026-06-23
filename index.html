@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a0010">
+<title>Viernes 13 · La Invitación</title>
+<style>
+  :root{
+    --rojo:#c1121f;
+    --rojo-claro:#ff3b47;
+    --sangre:#7a0a12;
+    --niebla:rgba(180,160,200,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{
+    width:100%;height:100%;overflow:hidden;background:#06000c;
+    font-family:'Trebuchet MS','Segoe UI',system-ui,sans-serif;
+    user-select:none;-webkit-user-select:none;
+    touch-action:none;
+  }
+  #game{position:fixed;inset:0;display:block;width:100%;height:100%;}
+
+  /* ---- Capas de interfaz ---- */
+  .overlay{
+    position:fixed;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;
+    padding:24px;z-index:10;
+    background:radial-gradient(ellipse at 50% 35%,rgba(60,0,30,.55),rgba(3,0,8,.92));
+    backdrop-filter:blur(2px);
+    transition:opacity .4s ease;
+  }
+  .hidden{opacity:0;pointer-events:none;}
+
+  .titulo{
+    font-family:Georgia,'Times New Roman',serif;
+    color:#fff;line-height:1;letter-spacing:1px;
+    text-shadow:0 0 18px rgba(193,18,31,.9),0 0 4px #000;
+  }
+  .titulo .v{display:block;font-size:clamp(38px,13vw,96px);font-weight:bold;color:var(--rojo-claro);}
+  .titulo .t{display:block;font-size:clamp(20px,6vw,40px);color:#e9d8e0;margin-top:4px;}
+  .sub{
+    color:#b9a9c4;margin-top:18px;max-width:520px;
+    font-size:clamp(14px,4vw,18px);line-height:1.5;
+  }
+  .luna13{
+    font-size:clamp(54px,18vw,120px);line-height:1;margin-bottom:6px;
+    filter:drop-shadow(0 0 22px rgba(255,80,90,.6));
+    animation:flota 4s ease-in-out infinite;
+  }
+  @keyframes flota{50%{transform:translateY(-10px)}}
+
+  .btn{
+    margin-top:30px;cursor:pointer;border:none;
+    font-family:Georgia,serif;font-size:clamp(16px,5vw,22px);font-weight:bold;
+    color:#fff;padding:16px 38px;border-radius:50px;
+    background:linear-gradient(180deg,var(--rojo-claro),var(--sangre));
+    box-shadow:0 0 0 2px rgba(255,90,100,.5),0 10px 30px rgba(193,18,31,.5);
+    letter-spacing:1px;transition:transform .12s ease,box-shadow .2s ease;
+  }
+  .btn:active{transform:scale(.95);}
+  .tip{margin-top:22px;color:#7d6f88;font-size:13px;letter-spacing:.5px;}
+
+  /* ---- HUD durante el juego ---- */
+  #hud{
+    position:fixed;top:0;left:0;right:0;z-index:5;
+    display:flex;align-items:center;gap:10px;
+    padding:14px 16px calc(14px + env(safe-area-inset-top));
+    pointer-events:none;
+  }
+  #barra{
+    flex:1;height:12px;border-radius:8px;overflow:hidden;
+    background:rgba(255,255,255,.12);box-shadow:inset 0 0 6px rgba(0,0,0,.6);
+    position:relative;
+  }
+  #relleno{
+    position:absolute;inset:0;width:0%;
+    background:linear-gradient(90deg,var(--sangre),var(--rojo-claro));
+    box-shadow:0 0 12px var(--rojo-claro);transition:width .15s linear;
+  }
+  #meta{font-size:20px;filter:drop-shadow(0 0 6px #fff);}
+  #etq{
+    color:#d8c8e0;font-size:12px;letter-spacing:1px;text-transform:uppercase;
+    text-shadow:0 1px 3px #000;
+  }
+  #vidas{font-size:18px;letter-spacing:2px;text-shadow:0 0 6px #000;}
+
+  /* ---- Tarjeta de invitación ---- */
+  .tarjeta{
+    background:
+      linear-gradient(180deg,rgba(30,0,12,.96),rgba(12,0,8,.98));
+    border:1px solid rgba(255,90,100,.45);
+    box-shadow:0 0 50px rgba(193,18,31,.45),inset 0 0 30px rgba(0,0,0,.6);
+    border-radius:22px;padding:30px 26px;max-width:440px;width:100%;
+    position:relative;overflow:hidden;
+  }
+  .tarjeta::before{
+    content:"13";position:absolute;right:-14px;top:-30px;
+    font-family:Georgia,serif;font-size:160px;font-weight:bold;
+    color:rgba(255,60,71,.07);line-height:1;pointer-events:none;
+  }
+  .tarjeta h2{
+    font-family:Georgia,serif;color:var(--rojo-claro);
+    font-size:clamp(22px,7vw,32px);letter-spacing:1px;
+    text-shadow:0 0 16px rgba(193,18,31,.8);
+  }
+  .tarjeta .estas{color:#bda9c6;font-size:14px;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;}
+  .linea{height:1px;background:linear-gradient(90deg,transparent,rgba(255,90,100,.6),transparent);margin:20px 0;}
+  .dato{display:flex;align-items:flex-start;gap:14px;text-align:left;margin:16px 0;}
+  .dato .ic{font-size:26px;width:34px;text-align:center;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(255,90,100,.6));}
+  .dato .txt b{display:block;color:#fff;font-size:16px;letter-spacing:.5px;}
+  .dato .txt span{color:#c3b4cc;font-size:14px;line-height:1.4;}
+  .firma{color:#8a7b94;font-style:italic;font-size:13px;margin-top:18px;}
+  .tarjeta .btn{margin-top:24px;padding:13px 30px;font-size:17px;}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div id="etq">El camino</div>
+  <div id="barra"><div id="relleno"></div></div>
+  <div id="meta">🏚️</div>
+  <div id="vidas">🖤🖤🖤</div>
+</div>
+
+<!-- Pantalla de inicio -->
+<div id="inicio" class="overlay">
+  <div class="luna13">🌑</div>
+  <div class="titulo"><span class="v">VIERNES 13</span><span class="t">La Invitación Maldita</span></div>
+  <p class="sub">Ayuda a la dama de rojo a cruzar la noche de la mala suerte.
+  Esquiva los gatos negros, las lápidas y los espejos rotos… y al final
+  descubrirás dónde te esperamos.</p>
+  <button class="btn" id="jugar">ENTRAR ▸</button>
+  <p class="tip">Toca la pantalla / ESPACIO para saltar</p>
+</div>
+
+<!-- Pantalla de derrota -->
+<div id="derrota" class="overlay hidden">
+  <div class="luna13">💀</div>
+  <div class="titulo"><span class="t">La mala suerte te alcanzó…</span></div>
+  <p class="sub">Pero el destino da segundas oportunidades.</p>
+  <button class="btn" id="reintentar">VOLVER A INTENTAR ↺</button>
+</div>
+
+<!-- Pantalla de victoria / invitación -->
+<div id="victoria" class="overlay hidden">
+  <div class="tarjeta">
+    <div class="estas">Estás cordialmente invitad@ a</div>
+    <h2>La Noche del Viernes 13</h2>
+    <div class="linea"></div>
+    <div class="dato"><div class="ic">📍</div><div class="txt"><b>Dónde</b><span>Mansión Calle Cuervo 1313<br>Barrio La Niebla — Salón "El Espejo Roto"</span></div></div>
+    <div class="dato"><div class="ic">🕛</div><div class="txt"><b>Cuándo</b><span>Viernes 13 · 23:13 hs<br>(la maldición no espera a nadie)</span></div></div>
+    <div class="dato"><div class="ic">🩸</div><div class="txt"><b>Dress code</b><span>Rojo sangre &amp; negro fantasma.<br>Un toque de "13" suma suerte.</span></div></div>
+    <div class="linea"></div>
+    <p class="firma">«Cruzaste la noche… ahora ven a celebrarla.»</p>
+    <button class="btn" id="otra">JUGAR DE NUEVO ↺</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const cv = document.getElementById('game');
+  const ctx = cv.getContext('2d');
+
+  // ---------- Dimensiones responsivas ----------
+  let W=0,H=0,DPR=1,GROUND=0,SCALE=1;
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = Math.floor(W*DPR); cv.height = Math.floor(H*DPR);
+    cv.style.width=W+'px'; cv.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    SCALE = Math.min(Math.max(Math.min(W,H)/520, .62), 1.25);
+    GROUND = H - Math.max(70, H*0.16);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------- Sprite del personaje ----------
+  const sprite = new Image();
+  let spriteOK=false;
+  sprite.onload = ()=>{ spriteOK=true; };
+  sprite.src = 'personaje.png';
+
+  // ---------- Estado del juego ----------
+  const META = 4200;          // distancia hasta la fiesta
+  let state='menu';           // menu | play | dead | win
+  let dist, speed, lives, invuln, shake;
+  let player, obstacles, bats, spawnX, jumps;
+
+  function reset(){
+    dist=0; speed=4.2*SCALE; lives=3; invuln=0; shake=0;
+    jumps=0;
+    player={ x:W*0.22, y:GROUND, vy:0, w:64*SCALE, h:116*SCALE, onGround:true };
+    obstacles=[]; bats=[];
+    spawnX = W + 200;
+    setVidas();
+  }
+
+  // ---------- Obstáculos (símbolos de mala suerte) ----------
+  const TIPOS=[
+    {e:'🪦',w:46,h:54,g:1},   // lápida
+    {e:'🐈‍⬛',w:50,h:40,g:1},  // gato negro
+    {e:'🪞',w:42,h:54,g:1},   // espejo
+    {e:'🕯️',w:30,h:50,g:1},   // vela
+    {e:'☂️',w:46,h:48,g:1},   // paraguas (mala suerte adentro)
+    {e:'🦇',w:48,h:40,g:0},   // murciélago volador (esquivar agachando = saltar bajo)
+  ];
+
+  function spawn(){
+    // distancia entre obstáculos depende de la velocidad
+    const gap = (260 + Math.random()*220) * (0.9 + speed/14);
+    if(spawnX <= W + 60){
+      const t = TIPOS[(Math.random()*TIPOS.length)|0];
+      const fly = t.g===0;
+      obstacles.push({
+        e:t.e, w:t.w*SCALE, h:t.h*SCALE,
+        x: W + 60,
+        y: fly ? GROUND - (90+Math.random()*40)*SCALE : GROUND,
+        fly, hit:false
+      });
+      spawnX = W + 60 + gap;
+    }
+    spawnX -= speed;
+  }
+
+  function jump(){
+    if(state==='menu'||state==='dead'||state==='win') return;
+    if(player.onGround){
+      player.vy = -13.5*Math.sqrt(SCALE); player.onGround=false; jumps=1;
+    } else if(jumps<2){
+      player.vy = -11.5*Math.sqrt(SCALE); jumps=2;   // doble salto
+    }
+  }
+
+  // ---------- Bucle ----------
+  let last=0;
+  function loop(ts){
+    const dt = Math.min((ts-last)/16.67, 2.2); last=ts;
+    if(state==='play') update(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function update(dt){
+    speed += 0.0016*dt;                 // acelera lento
+    dist += speed*dt;
+    progreso(dist/META);
+
+    // física jugador
+    player.vy += 0.62*Math.sqrt(SCALE)*dt;
+    player.y += player.vy*dt;
+    if(player.y>=GROUND){ player.y=GROUND; player.vy=0; player.onGround=true; jumps=0; }
+
+    // generar obstáculos
+    if(dist < META-700){ for(let i=0;i<dt;i++) spawn(); }
+
+    // mover obstáculos + colisión
+    for(const o of obstacles){
+      o.x -= speed*dt;
+      if(!o.hit && invuln<=0){
+        const px=player.x, pw=player.w*0.5, py=player.y-player.h, ph=player.h;
+        const ox=o.x, ow=o.w, oy=o.y-o.h, oh=o.h;
+        if(px+pw*0.5 > ox-ow*0.4 && px-pw*0.5 < ox+ow*0.4 &&
+           py+ph > oy && py < oy+oh){
+          o.hit=true; golpe();
+        }
+      }
+    }
+    obstacles = obstacles.filter(o=>o.x > -80);
+
+    // murciélagos decorativos al fondo
+    if(Math.random()<0.02) bats.push({x:W+20,y:Math.random()*H*0.45+30,s:(1+Math.random())*speed*0.5,f:Math.random()*6});
+    for(const b of bats){ b.x-=b.s*dt; b.f+=0.3*dt; }
+    bats = bats.filter(b=>b.x>-40);
+
+    if(invuln>0) invuln-=dt;
+    if(shake>0) shake-=dt;
+
+    // victoria
+    if(dist>=META){ win(); }
+  }
+
+  function golpe(){
+    lives--; setVidas(); invuln=70; shake=14;
+    if(lives<=0) dead();
+  }
+
+  // ---------- Dibujo ----------
+  let starsArr=null;
+  function stars(){
+    if(starsArr) return starsArr;
+    starsArr=[]; for(let i=0;i<70;i++) starsArr.push({x:Math.random(),y:Math.random()*0.55,r:Math.random()*1.6+0.3,t:Math.random()*6});
+    return starsArr;
+  }
+
+  function draw(){
+    ctx.save();
+    let sx=0,sy=0;
+    if(shake>0){ sx=(Math.random()-.5)*shake; sy=(Math.random()-.5)*shake; }
+    ctx.translate(sx,sy);
+
+    // cielo
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#0c0118'); g.addColorStop(0.5,'#1a0220'); g.addColorStop(1,'#2a0414');
+    ctx.fillStyle=g; ctx.fillRect(-20,-20,W+40,H+40);
+
+    // estrellas
+    const t=performance.now()*0.001;
+    for(const s of stars()){
+      ctx.globalAlpha=0.4+0.5*Math.abs(Math.sin(t+s.t));
+      ctx.fillStyle='#fff';
+      ctx.fillRect(s.x*W, s.y*H, s.r, s.r);
+    }
+    ctx.globalAlpha=1;
+
+    // luna sangrienta
+    const mx=W*0.8, my=H*0.2, mr=Math.min(W,H)*0.11;
+    const mg=ctx.createRadialGradient(mx,my,mr*0.2,mx,my,mr*1.8);
+    mg.addColorStop(0,'rgba(255,120,120,.35)'); mg.addColorStop(1,'rgba(255,120,120,0)');
+    ctx.fillStyle=mg; ctx.beginPath(); ctx.arc(mx,my,mr*1.8,0,7); ctx.fill();
+    ctx.fillStyle='#e9b7b7'; ctx.beginPath(); ctx.arc(mx,my,mr,0,7); ctx.fill();
+    ctx.fillStyle='rgba(120,40,40,.25)';
+    ctx.beginPath(); ctx.arc(mx-mr*0.3,my-mr*0.2,mr*0.22,0,7); ctx.fill();
+    ctx.beginPath(); ctx.arc(mx+mr*0.35,my+mr*0.25,mr*0.16,0,7); ctx.fill();
+
+    // murciélagos
+    ctx.fillStyle='#0a0008';
+    for(const b of bats) bat(b.x,b.y,12+Math.sin(b.f),Math.sin(b.f*0.6));
+
+    // silueta de árboles/lápidas de fondo (parallax)
+    siluetas();
+
+    // mansión al final (aparece al acercarse)
+    if(dist>META-W*1.4){
+      const hx = W*0.5 + (META-dist) - W*0.0;
+      mansion(W - (META-dist)*0.9, GROUND);
+    }
+
+    // suelo
+    const gg=ctx.createLinearGradient(0,GROUND,0,H);
+    gg.addColorStop(0,'#21030f'); gg.addColorStop(1,'#0a0006');
+    ctx.fillStyle=gg; ctx.fillRect(-20,GROUND,W+40,H-GROUND+20);
+    ctx.strokeStyle='rgba(255,80,90,.35)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(-20,GROUND+1); ctx.lineTo(W+20,GROUND+1); ctx.stroke();
+    // textura suelo en movimiento
+    ctx.strokeStyle='rgba(255,255,255,.05)';
+    const off=(dist*1.0)% 40;
+    for(let x=-off;x<W;x+=40){ ctx.beginPath(); ctx.moveTo(x,GROUND+8); ctx.lineTo(x+18,GROUND+8); ctx.stroke(); }
+
+    // obstáculos
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    for(const o of obstacles){
+      ctx.save();
+      ctx.font = Math.round(o.h)+'px serif';
+      if(o.fly){ ctx.translate(0,Math.sin(performance.now()*0.005+o.x)*6); }
+      ctx.globalAlpha = o.hit?0.25:1;
+      ctx.fillText(o.e, o.x, o.y);
+      ctx.restore();
+    }
+
+    // jugador
+    drawPlayer();
+
+    // niebla inferior
+    const fg=ctx.createLinearGradient(0,H-120,0,H);
+    fg.addColorStop(0,'rgba(180,150,200,0)'); fg.addColorStop(1,'rgba(150,120,180,.12)');
+    ctx.fillStyle=fg; ctx.fillRect(-20,H-120,W+40,140);
+
+    ctx.restore();
+  }
+
+  function drawPlayer(){
+    const ph=player.h, pw=player.w;
+    const x=player.x, y=player.y;
+    // sombra
+    ctx.fillStyle='rgba(0,0,0,.4)';
+    const sc=player.onGround?1:0.6;
+    ctx.beginPath();
+    ctx.ellipse(x, GROUND+6, pw*0.4*sc, 8*sc, 0,0,7); ctx.fill();
+    // parpadeo si invulnerable
+    if(invuln>0 && (Math.floor(invuln/5)%2===0)){ return; }
+    if(spriteOK){
+      const ratio = sprite.width/sprite.height;
+      const h=ph, w=h*ratio;
+      // leve balanceo al correr
+      const bob = player.onGround? Math.sin(dist*0.25)*2 : 0;
+      ctx.save();
+      ctx.translate(x, y+bob);
+      ctx.drawImage(sprite, -w/2, -h, w, h);
+      ctx.restore();
+    } else {
+      ctx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--rojo')||'#c1121f';
+      ctx.fillRect(x-pw/2, y-ph, pw, ph);
+    }
+  }
+
+  function bat(x,y,w,flap){
+    ctx.save(); ctx.translate(x,y);
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.quadraticCurveTo(-w*0.5,-flap*w*0.4-3,-w, -2);
+    ctx.quadraticCurveTo(-w*0.5,2,0,3);
+    ctx.quadraticCurveTo(w*0.5,2,w,-2);
+    ctx.quadraticCurveTo(w*0.5,-flap*w*0.4-3,0,0);
+    ctx.fill(); ctx.restore();
+  }
+
+  let silArr=null;
+  function siluetas(){
+    if(!silArr){ silArr=[]; for(let i=0;i<14;i++) silArr.push({x:Math.random(),h:0.06+Math.random()*0.13,w:0.02+Math.random()*0.05,k:Math.random()}); }
+    ctx.fillStyle='rgba(8,0,10,.85)';
+    const off=(dist*0.35)%(W*1.3);
+    for(const s of silArr){
+      let bx=(s.x*W*1.3 - off); if(bx<-60) bx+=W*1.3;
+      const bh=H*s.h, bw=W*s.w;
+      if(s.k<0.5){ // lápida
+        ctx.fillRect(bx,GROUND-bh,bw,bh);
+        ctx.beginPath(); ctx.arc(bx+bw/2,GROUND-bh,bw/2,Math.PI,0); ctx.fill();
+      } else { // árbol seco
+        ctx.fillRect(bx+bw*0.4,GROUND-bh,bw*0.2,bh);
+        ctx.fillRect(bx,GROUND-bh*0.8,bw*0.5,bw*0.12);
+        ctx.fillRect(bx+bw*0.6,GROUND-bh*0.6,bw*0.5,bw*0.12);
+      }
+    }
+  }
+
+  function mansion(x,base){
+    const w=Math.min(W,H)*0.5, h=w*0.9;
+    ctx.save();
+    ctx.fillStyle='rgba(5,0,8,.95)';
+    ctx.fillRect(x, base-h, w, h);
+    // tejado
+    ctx.beginPath(); ctx.moveTo(x-10,base-h); ctx.lineTo(x+w/2,base-h*1.4); ctx.lineTo(x+w+10,base-h); ctx.fill();
+    // ventanas iluminadas de rojo
+    ctx.fillStyle='rgba(255,60,71,.55)';
+    for(let i=0;i<3;i++)for(let j=0;j<2;j++){
+      ctx.fillRect(x+w*0.18+i*w*0.28, base-h*0.78+j*h*0.34, w*0.14, h*0.18);
+    }
+    // puerta
+    ctx.fillStyle='rgba(255,90,100,.7)';
+    ctx.fillRect(x+w*0.4, base-h*0.32, w*0.2, h*0.32);
+    ctx.restore();
+  }
+
+  // ---------- HUD ----------
+  const relleno=document.getElementById('relleno');
+  const vidasEl=document.getElementById('vidas');
+  function progreso(p){ relleno.style.width=Math.min(100,p*100).toFixed(1)+'%'; }
+  function setVidas(){ vidasEl.textContent='🖤'.repeat(Math.max(0,lives))+'🤍'.repeat(Math.max(0,3-lives)); }
+
+  // ---------- Transiciones de pantalla ----------
+  const elInicio=document.getElementById('inicio');
+  const elDerrota=document.getElementById('derrota');
+  const elVictoria=document.getElementById('victoria');
+  const elHud=document.getElementById('hud');
+  function show(el){ el.classList.remove('hidden'); }
+  function hide(el){ el.classList.add('hidden'); }
+
+  function start(){
+    reset(); state='play';
+    hide(elInicio); hide(elDerrota); hide(elVictoria); show(elHud);
+  }
+  function dead(){ state='dead'; hide(elHud); show(elDerrota); }
+  function win(){ state='win'; hide(elHud); show(elVictoria); }
+
+  document.getElementById('jugar').addEventListener('click', start);
+  document.getElementById('reintentar').addEventListener('click', start);
+  document.getElementById('otra').addEventListener('click', start);
+
+  // ---------- Controles ----------
+  function onTap(e){
+    if(state==='play'){ e.preventDefault(); jump(); }
+  }
+  window.addEventListener('pointerdown', onTap, {passive:false});
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'||e.code==='ArrowUp'){
+      e.preventDefault();
+      if(state==='play') jump();
+      else if(state==='menu') start();
+    }
+  });
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
