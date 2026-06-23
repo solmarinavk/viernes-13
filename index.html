@@ -358,8 +358,10 @@
   let last=0;
   function loop(ts){
     const dt = Math.min((ts-last)/16.67, 2.2); last=ts;
-    if(state==='play') update(dt);
-    draw();
+    try{
+      if(state==='play') update(dt);
+      draw();
+    }catch(err){ if(window.console) console.error(err); } // un error nunca congela el juego
     requestAnimationFrame(loop);
   }
 
@@ -492,6 +494,7 @@
   }
 
   function drawPlayer(){
+    if(!player) return;
     const ph=player.h, pw=player.w;
     const x=player.x, y=player.y;
     // sombra
@@ -612,6 +615,7 @@
     }
   });
 
+  reset();                 // inicializa al personaje antes de dibujar el primer frame
   requestAnimationFrame(loop);
 })();
 </script>
