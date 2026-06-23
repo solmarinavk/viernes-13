@@ -5,4 +5,5 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Cache-Control = "public, max-age=3600"
+    # sin caché: cada visita trae siempre la última versión (evita imágenes/HTML viejos)
+    Cache-Control = "public, max-age=0, must-revalidate"

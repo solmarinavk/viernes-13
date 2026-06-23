@@ -117,7 +117,19 @@
     font-size:clamp(22px,7vw,32px);letter-spacing:1px;
     text-shadow:0 0 16px rgba(193,18,31,.8);
   }
-  .tarjeta .estas{color:#bda9c6;font-size:14px;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;}
+  .ganaste{
+    font-family:Georgia,serif;font-weight:bold;
+    color:#ffd76b;font-size:clamp(17px,5.5vw,22px);letter-spacing:1px;
+    text-shadow:0 0 16px rgba(255,180,60,.7),0 0 4px #000;margin-bottom:10px;
+    animation:latido 1.4s ease-in-out infinite;
+  }
+  @keyframes latido{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .tarjeta .estas{color:#bda9c6;font-size:13px;letter-spacing:1px;line-height:1.5;margin-bottom:6px;}
+  .btn-sec{
+    background:transparent;box-shadow:none;border:1px solid rgba(255,90,100,.5);
+    color:#d9b9c4;font-weight:normal;font-size:14px !important;
+    padding:11px 24px !important;letter-spacing:.5px;
+  }
   .linea{height:1px;background:linear-gradient(90deg,transparent,rgba(255,90,100,.6),transparent);margin:20px 0;}
   .dato{display:flex;align-items:flex-start;gap:14px;text-align:left;margin:16px 0;}
   .dato .ic{font-size:26px;width:34px;text-align:center;flex-shrink:0;filter:drop-shadow(0 0 6px rgba(255,90,100,.6));}
@@ -143,11 +155,11 @@
 <div id="inicio" class="overlay">
   <div class="luna13">🌑</div>
   <div class="titulo"><span class="v">VIERNES 13</span><span class="t">La Invitación Maldita</span></div>
-  <p class="sub">Ayuda a la dama de rojo a cruzar la noche de la mala suerte.
-  Esquiva los gatos negros, las lápidas y los espejos rotos… y al final
-  descubrirás dónde te esperamos.</p>
-  <button class="btn" id="jugar">ENTRAR ▸</button>
-  <p class="tip">Toca la pantalla / ESPACIO para saltar</p>
+  <p class="sub"><b>Objetivo:</b> guiá a la dama de rojo hasta la <b>mansión 🏚️</b> saltando
+  por encima de la mala suerte (gatos negros, lápidas, espejos rotos…).
+  Si llegás, <b>se revela tu invitación</b>.</p>
+  <button class="btn" id="jugar">▸ EMPEZAR EL CAMINO</button>
+  <p class="tip">📱 Tocá la pantalla &nbsp;·&nbsp; ⌨️ ESPACIO para saltar</p>
 </div>
 
 <!-- Pantalla de derrota -->
@@ -161,15 +173,16 @@
 <!-- Pantalla de victoria / invitación -->
 <div id="victoria" class="overlay hidden">
   <div class="tarjeta">
-    <div class="estas">Estás cordialmente invitad@ a</div>
+    <div class="ganaste">🎉 ¡LLEGASTE A LA MANSIÓN! 🎉</div>
+    <div class="estas">Cruzaste la noche de la mala suerte.<br>Este es tu premio — quedás invitad@ a:</div>
     <h2>La Noche del Viernes 13</h2>
     <div class="linea"></div>
     <div class="dato"><div class="ic">📍</div><div class="txt"><b>Dónde</b><span>Mansión Calle Cuervo 1313<br>Barrio La Niebla — Salón "El Espejo Roto"</span></div></div>
     <div class="dato"><div class="ic">🕛</div><div class="txt"><b>Cuándo</b><span>Viernes 13 · 23:13 hs<br>(la maldición no espera a nadie)</span></div></div>
     <div class="dato"><div class="ic">🩸</div><div class="txt"><b>Dress code</b><span>Rojo sangre &amp; negro fantasma.<br>Un toque de "13" suma suerte.</span></div></div>
     <div class="linea"></div>
-    <p class="firma">«Cruzaste la noche… ahora ven a celebrarla.»</p>
-    <button class="btn" id="otra">JUGAR DE NUEVO ↺</button>
+    <p class="firma">«Tomá una captura de pantalla para no perder los datos.»</p>
+    <button class="btn btn-sec" id="otra">↺ jugar otra vez</button>
   </div>
 </div>
 
@@ -206,7 +219,7 @@
   const sprite = new Image();
   let spriteOK=false;
   sprite.onload = ()=>{ spriteOK=true; };
-  sprite.src = 'personaje.png';
+  sprite.src = 'personaje.png?v=3';   // ?v fuerza recarga si el navegador la tenía cacheada
 
   // ---------- Motor de audio (Web Audio API, sin archivos) ----------
   const SFX = (function(){
@@ -404,8 +417,8 @@
     if(invuln>0) invuln-=dt;
     if(shake>0) shake-=dt;
 
-    // victoria
-    if(dist>=META){ win(); }
+    // victoria (solo si seguimos jugando: evita ganar y morir en el mismo frame)
+    if(state==='play' && dist>=META){ win(); }
   }
 
   function golpe(){
@@ -485,6 +498,17 @@
 
     // jugador
     drawPlayer();
+
+    // aviso al acercarse a la meta (deja claro dónde termina el camino)
+    if(state==='play' && dist > META-1000){
+      ctx.save();
+      ctx.globalAlpha = 0.55+0.45*Math.abs(Math.sin(performance.now()*0.005));
+      ctx.fillStyle='#ffd76b';
+      ctx.font='bold '+Math.round(19*SCALE)+'px Georgia, serif';
+      ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillText('¡La mansión está cerca! 🏚️', W/2, H*0.13);
+      ctx.restore();
+    }
 
     // niebla inferior
     const fg=ctx.createLinearGradient(0,H-120,0,H);
