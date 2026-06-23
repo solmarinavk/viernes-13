@@ -21,6 +21,19 @@
   }
   #game{position:fixed;inset:0;display:block;width:100%;height:100%;}
 
+  /* ---- Botón de sonido ---- */
+  #mute{
+    position:fixed;z-index:20;cursor:pointer;
+    top:calc(12px + env(safe-area-inset-top));
+    right:calc(12px + env(safe-area-inset-right));
+    width:46px;height:46px;border:none;border-radius:50%;
+    background:rgba(20,0,12,.6);border:1px solid rgba(255,90,100,.4);
+    color:#fff;font-size:20px;line-height:1;
+    backdrop-filter:blur(4px);box-shadow:0 2px 12px rgba(0,0,0,.5);
+    transition:transform .1s ease,background .2s ease;
+  }
+  #mute:active{transform:scale(.9);}
+
   /* ---- Capas de interfaz ---- */
   .overlay{
     position:fixed;inset:0;display:flex;flex-direction:column;
@@ -65,7 +78,7 @@
   #hud{
     position:fixed;top:0;left:0;right:0;z-index:5;
     display:flex;align-items:center;gap:10px;
-    padding:14px 16px calc(14px + env(safe-area-inset-top));
+    padding:calc(14px + env(safe-area-inset-top)) calc(66px + env(safe-area-inset-right)) 14px calc(16px + env(safe-area-inset-left));
     pointer-events:none;
   }
   #barra{
@@ -116,6 +129,7 @@
 </head>
 <body>
 <canvas id="game"></canvas>
+<button id="mute" aria-label="Sonido">🔊</button>
 
 <!-- HUD -->
 <div id="hud" class="hidden">
@@ -165,6 +179,10 @@
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
 
+  // ---------- Estado del juego (declarado antes de resize para evitar TDZ) ----------
+  let dist, speed, lives, invuln, shake;
+  let player=null, obstacles=[], bats=[], spawnX, jumps;
+
   // ---------- Dimensiones responsivas ----------
   let W=0,H=0,DPR=1,GROUND=0,SCALE=1;
   function resize(){
@@ -175,6 +193,11 @@
     ctx.setTransform(DPR,0,0,DPR,0,0);
     SCALE = Math.min(Math.max(Math.min(W,H)/520, .62), 1.25);
     GROUND = H - Math.max(70, H*0.16);
+    // al rotar/redimensionar, mantener al personaje proporcionado y sobre el piso
+    if(typeof player!=='undefined' && player){
+      player.w=64*SCALE; player.h=116*SCALE;
+      if(player.onGround) player.y=GROUND;
+    }
   }
   window.addEventListener('resize', resize);
   resize();
@@ -185,54 +208,153 @@
   sprite.onload = ()=>{ spriteOK=true; };
   sprite.src = 'personaje.png';
 
+  // ---------- Motor de audio (Web Audio API, sin archivos) ----------
+  const SFX = (function(){
+    let ac=null, master=null, muted=false, ambOn=false, ambNodes=[];
+    function ensure(){
+      const AC = window.AudioContext||window.webkitAudioContext;
+      if(!AC) return;
+      if(!ac){
+        ac = new AC();
+        master = ac.createGain();
+        master.gain.value = muted?0:0.9;
+        master.connect(ac.destination);
+      }
+      if(ac.state==='suspended' && ac.resume) ac.resume(); // iOS/Safari arranca suspendido
+    }
+    function now(){ return ac.currentTime; }
+    // tono simple con envolvente
+    function tone(freq,dur,type,vol,glideTo){
+      if(!ac||muted) return;
+      const t=now();
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type=type||'square'; o.frequency.setValueAtTime(freq,t);
+      if(glideTo) o.frequency.exponentialRampToValueAtTime(Math.max(1,glideTo),t+dur);
+      g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(vol||0.3,t+0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g); g.connect(master);
+      o.start(t); o.stop(t+dur+0.02);
+    }
+    function noise(dur,vol,filtType,filtFreq){
+      if(!ac||muted) return;
+      const t=now();
+      const n=Math.floor(ac.sampleRate*dur);
+      const buf=ac.createBuffer(1,n,ac.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+      const src=ac.createBufferSource(); src.buffer=buf;
+      const f=ac.createBiquadFilter(); f.type=filtType||'lowpass'; f.frequency.value=filtFreq||1200;
+      const g=ac.createGain(); g.gain.value=vol||0.3;
+      src.connect(f); f.connect(g); g.connect(master);
+      src.start(t);
+    }
+    // --- efectos del juego ---
+    const fx = {
+      jump(){ tone(330,0.18,'square',0.25,620); },
+      djump(){ tone(520,0.16,'square',0.22,880); tone(660,0.12,'triangle',0.12,990); },
+      hit(){ noise(0.25,0.4,'lowpass',900); tone(140,0.3,'sawtooth',0.3,60); },
+      dead(){
+        if(!ac||muted) return;
+        [392,330,262,180].forEach((f,i)=> setTimeout(()=>tone(f,0.4,'sawtooth',0.28,f*0.6), i*150));
+        setTimeout(()=>noise(0.6,0.3,'lowpass',400),120);
+      },
+      win(){
+        if(!ac||muted) return;
+        [392,523,659,784,1047].forEach((f,i)=> setTimeout(()=>tone(f,0.5,'triangle',0.3), i*120));
+        [262,330,392].forEach((f,i)=> setTimeout(()=>tone(f,0.7,'sine',0.18), i*120+60));
+      }
+    };
+    // --- atmósfera de fondo (viento + latido) ---
+    function ambient(on){
+      if(!ac) return;
+      if(on && !ambOn){
+        ambOn=true;
+        // viento: ruido filtrado y modulado
+        const n=ac.createBufferSource();
+        const len=ac.sampleRate*2, buf=ac.createBuffer(1,len,ac.sampleRate), d=buf.getChannelData(0);
+        for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+        n.buffer=buf; n.loop=true;
+        const f=ac.createBiquadFilter(); f.type='bandpass'; f.frequency.value=420; f.Q.value=0.7;
+        const g=ac.createGain(); g.gain.value=0.05;
+        const lfo=ac.createOscillator(), lg=ac.createGain();
+        lfo.frequency.value=0.12; lg.gain.value=0.03;
+        lfo.connect(lg); lg.connect(g.gain);
+        n.connect(f); f.connect(g); g.connect(master);
+        n.start(); lfo.start();
+        // latido del corazón
+        const hb=ac.createGain(); hb.gain.value=0; hb.connect(master);
+        const ho=ac.createOscillator(); ho.type='sine'; ho.frequency.value=55; ho.connect(hb); ho.start();
+        const beat=setInterval(()=>{
+          if(muted||!ac) return;
+          const t=now();
+          [0,0.28].forEach(off=>{
+            hb.gain.cancelScheduledValues(t+off);
+            hb.gain.setValueAtTime(0.0001,t+off);
+            hb.gain.exponentialRampToValueAtTime(0.22,t+off+0.04);
+            hb.gain.exponentialRampToValueAtTime(0.0001,t+off+0.22);
+          });
+        },1400);
+        ambNodes=[n,lfo,ho,{stop(){clearInterval(beat);}}];
+      } else if(!on && ambOn){
+        ambOn=false;
+        ambNodes.forEach(x=>{ try{x.stop();}catch(e){} });
+        ambNodes=[];
+      }
+    }
+    function setMuted(m){
+      muted=m;
+      if(master) master.gain.value = m?0:0.9;
+      return muted;
+    }
+    return {
+      ensure, fx, ambient,
+      toggle(){ ensure(); return setMuted(!muted); },
+      isMuted(){ return muted; }
+    };
+  })();
+
   // ---------- Estado del juego ----------
   const META = 4200;          // distancia hasta la fiesta
   let state='menu';           // menu | play | dead | win
-  let dist, speed, lives, invuln, shake;
-  let player, obstacles, bats, spawnX, jumps;
 
   function reset(){
     dist=0; speed=4.2*SCALE; lives=3; invuln=0; shake=0;
     jumps=0;
     player={ x:W*0.22, y:GROUND, vy:0, w:64*SCALE, h:116*SCALE, onGround:true };
     obstacles=[]; bats=[];
-    spawnX = W + 200;
+    spawnX = W + 380;   // pequeño respiro antes del primer obstáculo
     setVidas();
   }
 
   // ---------- Obstáculos (símbolos de mala suerte) ----------
   const TIPOS=[
-    {e:'🪦',w:46,h:54,g:1},   // lápida
-    {e:'🐈‍⬛',w:50,h:40,g:1},  // gato negro
-    {e:'🪞',w:42,h:54,g:1},   // espejo
-    {e:'🕯️',w:30,h:50,g:1},   // vela
-    {e:'☂️',w:46,h:48,g:1},   // paraguas (mala suerte adentro)
-    {e:'🦇',w:48,h:40,g:0},   // murciélago volador (esquivar agachando = saltar bajo)
+    {e:'🪦',w:46,h:54},   // lápida
+    {e:'🐈‍⬛',w:50,h:42},  // gato negro
+    {e:'🪞',w:42,h:54},   // espejo roto
+    {e:'🕯️',w:30,h:50},   // vela
+    {e:'☂️',w:46,h:48},   // paraguas (mala suerte adentro)
+    {e:'🧂',w:40,h:46},   // sal derramada
   ];
 
-  function spawn(){
-    // distancia entre obstáculos depende de la velocidad
-    const gap = (260 + Math.random()*220) * (0.9 + speed/14);
-    if(spawnX <= W + 60){
+  // Genera obstáculos a ritmo constante (independiente del framerate)
+  function spawn(dt){
+    spawnX -= speed*dt;
+    if(spawnX <= W){
       const t = TIPOS[(Math.random()*TIPOS.length)|0];
-      const fly = t.g===0;
-      obstacles.push({
-        e:t.e, w:t.w*SCALE, h:t.h*SCALE,
-        x: W + 60,
-        y: fly ? GROUND - (90+Math.random()*40)*SCALE : GROUND,
-        fly, hit:false
-      });
-      spawnX = W + 60 + gap;
+      obstacles.push({ e:t.e, w:t.w*SCALE, h:t.h*SCALE, x:W+40, y:GROUND, hit:false });
+      // separación segura: siempre mayor al alcance de un salto
+      const gap = (340 + Math.random()*200) * (0.9 + speed/16);
+      spawnX = W + gap;
     }
-    spawnX -= speed;
   }
 
   function jump(){
     if(state==='menu'||state==='dead'||state==='win') return;
     if(player.onGround){
-      player.vy = -13.5*Math.sqrt(SCALE); player.onGround=false; jumps=1;
+      player.vy = -13.5*Math.sqrt(SCALE); player.onGround=false; jumps=1; SFX.fx.jump();
     } else if(jumps<2){
-      player.vy = -11.5*Math.sqrt(SCALE); jumps=2;   // doble salto
+      player.vy = -11.5*Math.sqrt(SCALE); jumps=2; SFX.fx.djump();   // doble salto
     }
   }
 
@@ -240,13 +362,15 @@
   let last=0;
   function loop(ts){
     const dt = Math.min((ts-last)/16.67, 2.2); last=ts;
-    if(state==='play') update(dt);
-    draw();
+    try{
+      if(state==='play') update(dt);
+      draw();
+    }catch(err){ if(window.console) console.error(err); } // un error nunca congela el juego
     requestAnimationFrame(loop);
   }
 
   function update(dt){
-    speed += 0.0016*dt;                 // acelera lento
+    speed = Math.min(speed + 0.0016*dt, 9.5*SCALE);   // acelera lento, con tope
     dist += speed*dt;
     progreso(dist/META);
 
@@ -255,17 +379,17 @@
     player.y += player.vy*dt;
     if(player.y>=GROUND){ player.y=GROUND; player.vy=0; player.onGround=true; jumps=0; }
 
-    // generar obstáculos
-    if(dist < META-700){ for(let i=0;i<dt;i++) spawn(); }
+    // generar obstáculos (deja una pista limpia hacia la mansión al final)
+    if(dist < META-700) spawn(dt);
 
-    // mover obstáculos + colisión
+    // mover obstáculos + colisión (AABB con caja de impacto indulgente)
+    const pHalf=player.w*0.30, pTop=player.y-player.h, pBot=player.y;
     for(const o of obstacles){
       o.x -= speed*dt;
       if(!o.hit && invuln<=0){
-        const px=player.x, pw=player.w*0.5, py=player.y-player.h, ph=player.h;
-        const ox=o.x, ow=o.w, oy=o.y-o.h, oh=o.h;
-        if(px+pw*0.5 > ox-ow*0.4 && px-pw*0.5 < ox+ow*0.4 &&
-           py+ph > oy && py < oy+oh){
+        const oHalf=o.w*0.40, oTop=o.y-o.h, oBot=o.y;
+        if(player.x+pHalf > o.x-oHalf && player.x-pHalf < o.x+oHalf &&
+           pBot > oTop && pTop < oBot){
           o.hit=true; golpe();
         }
       }
@@ -285,7 +409,7 @@
   }
 
   function golpe(){
-    lives--; setVidas(); invuln=70; shake=14;
+    lives--; setVidas(); invuln=70; shake=14; SFX.fx.hit();
     if(lives<=0) dead();
   }
 
@@ -334,10 +458,9 @@
     // silueta de árboles/lápidas de fondo (parallax)
     siluetas();
 
-    // mansión al final (aparece al acercarse)
-    if(dist>META-W*1.4){
-      const hx = W*0.5 + (META-dist) - W*0.0;
-      mansion(W - (META-dist)*0.9, GROUND);
+    // mansión al final: entra desde la derecha y se acerca al personaje
+    if(dist > META - W*1.4){
+      mansion(W*0.2 + (META-dist), GROUND);
     }
 
     // suelo
@@ -354,13 +477,11 @@
     // obstáculos
     ctx.textAlign='center'; ctx.textBaseline='alphabetic';
     for(const o of obstacles){
-      ctx.save();
-      ctx.font = Math.round(o.h)+'px serif';
-      if(o.fly){ ctx.translate(0,Math.sin(performance.now()*0.005+o.x)*6); }
       ctx.globalAlpha = o.hit?0.25:1;
-      ctx.fillText(o.e, o.x, o.y);
-      ctx.restore();
+      ctx.font = Math.round(o.h)+'px serif';
+      ctx.fillText(o.e, o.x, o.y+2);
     }
+    ctx.globalAlpha=1;
 
     // jugador
     drawPlayer();
@@ -374,6 +495,7 @@
   }
 
   function drawPlayer(){
+    if(!player) return;
     const ph=player.h, pw=player.w;
     const x=player.x, y=player.y;
     // sombra
@@ -463,27 +585,39 @@
   function start(){
     reset(); state='play';
     hide(elInicio); hide(elDerrota); hide(elVictoria); show(elHud);
+    SFX.ensure(); SFX.ambient(true);
   }
-  function dead(){ state='dead'; hide(elHud); show(elDerrota); }
-  function win(){ state='win'; hide(elHud); show(elVictoria); }
+  function dead(){ state='dead'; hide(elHud); show(elDerrota); SFX.ambient(false); SFX.fx.dead(); }
+  function win(){ state='win'; hide(elHud); show(elVictoria); SFX.ambient(false); SFX.fx.win(); }
 
   document.getElementById('jugar').addEventListener('click', start);
   document.getElementById('reintentar').addEventListener('click', start);
   document.getElementById('otra').addEventListener('click', start);
 
+  // ---------- Botón de sonido ----------
+  const muteBtn=document.getElementById('mute');
+  muteBtn.addEventListener('pointerdown', e=>{
+    e.preventDefault(); e.stopPropagation();
+    const m=SFX.toggle();
+    muteBtn.textContent = m?'🔇':'🔊';
+    muteBtn.setAttribute('aria-label', m?'Activar sonido':'Silenciar');
+  });
+
   // ---------- Controles ----------
   function onTap(e){
+    if(e.target && e.target.closest && e.target.closest('#mute')) return;
     if(state==='play'){ e.preventDefault(); jump(); }
   }
   window.addEventListener('pointerdown', onTap, {passive:false});
   window.addEventListener('keydown', e=>{
-    if(e.code==='Space'||e.code==='ArrowUp'){
+    if(e.code==='Space'||e.code==='ArrowUp'||e.code==='Enter'){
       e.preventDefault();
       if(state==='play') jump();
-      else if(state==='menu') start();
+      else start();            // menú, derrota o victoria → (re)comenzar
     }
   });
 
+  reset();                 // inicializa al personaje antes de dibujar el primer frame
   requestAnimationFrame(loop);
 })();
 </script>
