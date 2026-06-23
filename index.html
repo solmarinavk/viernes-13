@@ -37,11 +37,24 @@
   /* ---- Capas de interfaz ---- */
   .overlay{
     position:fixed;inset:0;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;text-align:center;
-    padding:24px;z-index:10;
+    align-items:center;justify-content:safe center;text-align:center;
+    padding:max(24px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
+    z-index:10;
     background:radial-gradient(ellipse at 50% 35%,rgba(60,0,30,.55),rgba(3,0,8,.92));
     backdrop-filter:blur(2px);
     transition:opacity .4s ease;
+    overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:auto;
+  }
+  .overlay>*{flex-shrink:0;}
+  /* pantallas bajas (celular horizontal): compactar para que entre todo */
+  @media (max-height:520px){
+    .luna13{font-size:clamp(34px,12vh,60px);margin-bottom:2px;}
+    .sub{margin-top:10px;}
+    .btn{margin-top:16px;padding:12px 30px;}
+    .tip{margin-top:12px;}
+    .tarjeta{padding:20px 22px;}
+    .dato{margin:10px 0;}
+    .linea{margin:12px 0;}
   }
   .hidden{opacity:0;pointer-events:none;}
 
@@ -96,7 +109,9 @@
     color:#d8c8e0;font-size:12px;letter-spacing:1px;text-transform:uppercase;
     text-shadow:0 1px 3px #000;
   }
-  #vidas{font-size:18px;letter-spacing:2px;text-shadow:0 0 6px #000;}
+  #vidas{font-size:17px;white-space:nowrap;text-shadow:0 0 6px #000;}
+  #vidas .hp{margin-left:2px;}
+  #vidas .hp.off{filter:grayscale(1) brightness(.5);opacity:.5;}
 
   /* ---- Tarjeta de invitación ---- */
   .tarjeta{
@@ -147,15 +162,15 @@
 <div id="hud" class="hidden">
   <div id="etq">El camino</div>
   <div id="barra"><div id="relleno"></div></div>
-  <div id="meta">🏚️</div>
-  <div id="vidas">🖤🖤🖤</div>
+  <div id="meta">🏁</div>
+  <div id="vidas"></div>
 </div>
 
 <!-- Pantalla de inicio -->
 <div id="inicio" class="overlay">
   <div class="luna13">🌑</div>
   <div class="titulo"><span class="v">VIERNES 13</span><span class="t">La Invitación Maldita</span></div>
-  <p class="sub"><b>Objetivo:</b> guiá a la dama de rojo hasta la <b>mansión 🏚️</b> saltando
+  <p class="sub"><b>Objetivo:</b> guiá a la dama de rojo hasta la <b>mansión</b> saltando
   por encima de la mala suerte (gatos negros, lápidas, espejos rotos…).
   Si llegás, <b>se revela tu invitación</b>.</p>
   <button class="btn" id="jugar">▸ EMPEZAR EL CAMINO</button>
@@ -179,7 +194,7 @@
     <div class="linea"></div>
     <div class="dato"><div class="ic">📍</div><div class="txt"><b>Dónde</b><span>Mansión Calle Cuervo 1313<br>Barrio La Niebla — Salón "El Espejo Roto"</span></div></div>
     <div class="dato"><div class="ic">🕛</div><div class="txt"><b>Cuándo</b><span>Viernes 13 · 23:13 hs<br>(la maldición no espera a nadie)</span></div></div>
-    <div class="dato"><div class="ic">🩸</div><div class="txt"><b>Dress code</b><span>Rojo sangre &amp; negro fantasma.<br>Un toque de "13" suma suerte.</span></div></div>
+    <div class="dato"><div class="ic">🔴</div><div class="txt"><b>Dress code</b><span>Rojo sangre &amp; negro fantasma.<br>Un toque de "13" suma suerte.</span></div></div>
     <div class="linea"></div>
     <p class="firma">«Tomá una captura de pantalla para no perder los datos.»</p>
     <button class="btn btn-sec" id="otra">↺ jugar otra vez</button>
@@ -341,13 +356,12 @@
   }
 
   // ---------- Obstáculos (símbolos de mala suerte) ----------
+  // Obstáculos dibujados con vectores (no emojis) -> se ven IGUAL en todos los dispositivos
   const TIPOS=[
-    {e:'🪦',w:46,h:54},   // lápida
-    {e:'🐈‍⬛',w:50,h:42},  // gato negro
-    {e:'🪞',w:42,h:54},   // espejo roto
-    {e:'🕯️',w:30,h:50},   // vela
-    {e:'☂️',w:46,h:48},   // paraguas (mala suerte adentro)
-    {e:'🧂',w:40,h:46},   // sal derramada
+    {t:'tomb',   w:48, h:56},   // lápida
+    {t:'cat',    w:52, h:46},   // gato negro
+    {t:'mirror', w:44, h:58},   // espejo roto
+    {t:'candle', w:28, h:52},   // vela
   ];
 
   // Genera obstáculos a ritmo constante (independiente del framerate)
@@ -355,7 +369,7 @@
     spawnX -= speed*dt;
     if(spawnX <= W){
       const t = TIPOS[(Math.random()*TIPOS.length)|0];
-      obstacles.push({ e:t.e, w:t.w*SCALE, h:t.h*SCALE, x:W+40, y:GROUND, hit:false });
+      obstacles.push({ t:t.t, w:t.w*SCALE, h:t.h*SCALE, x:W+40, y:GROUND, hit:false });
       // separación segura: siempre mayor al alcance de un salto
       const gap = (340 + Math.random()*200) * (0.9 + speed/16);
       spawnX = W + gap;
@@ -487,14 +501,8 @@
     const off=(dist*1.0)% 40;
     for(let x=-off;x<W;x+=40){ ctx.beginPath(); ctx.moveTo(x,GROUND+8); ctx.lineTo(x+18,GROUND+8); ctx.stroke(); }
 
-    // obstáculos
-    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
-    for(const o of obstacles){
-      ctx.globalAlpha = o.hit?0.25:1;
-      ctx.font = Math.round(o.h)+'px serif';
-      ctx.fillText(o.e, o.x, o.y+2);
-    }
-    ctx.globalAlpha=1;
+    // obstáculos (dibujados)
+    for(const o of obstacles) drawObstacle(o);
 
     // jugador
     drawPlayer();
@@ -506,7 +514,7 @@
       ctx.fillStyle='#ffd76b';
       ctx.font='bold '+Math.round(19*SCALE)+'px Georgia, serif';
       ctx.textAlign='center'; ctx.textBaseline='top';
-      ctx.fillText('¡La mansión está cerca! 🏚️', W/2, H*0.13);
+      ctx.fillText('¡La mansión está cerca!  →', W/2, H*0.13);
       ctx.restore();
     }
 
@@ -592,11 +600,94 @@
     ctx.restore();
   }
 
+  // ---------- Obstáculos dibujados (vectores, 100% multiplataforma) ----------
+  function rr(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function drawObstacle(o){
+    ctx.save();
+    ctx.translate(o.x, o.y);
+    ctx.globalAlpha = o.hit?0.3:1;
+    // sombra en el piso
+    ctx.fillStyle='rgba(0,0,0,.4)';
+    ctx.beginPath(); ctx.ellipse(0,0,o.w*0.5,Math.max(3,o.h*0.06),0,0,7); ctx.fill();
+    if(o.t==='tomb') obTomb(o.w,o.h);
+    else if(o.t==='cat') obCat(o.w,o.h);
+    else if(o.t==='mirror') obMirror(o.w,o.h);
+    else obCandle(o.w,o.h);
+    ctx.restore();
+    ctx.globalAlpha=1;
+  }
+  function obTomb(w,h){
+    const r=w*0.5;
+    ctx.fillStyle='#827d8a';
+    ctx.beginPath();
+    ctx.moveTo(-w/2,0); ctx.lineTo(-w/2,-h+r);
+    ctx.arc(0,-h+r,r,Math.PI,0); ctx.lineTo(w/2,0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#5c5766';                          // base
+    ctx.fillRect(-w*0.62,-h*0.07,w*1.24,h*0.07);
+    ctx.strokeStyle='#3a3744'; ctx.lineWidth=Math.max(2,w*0.08); ctx.lineCap='round';
+    ctx.beginPath();                                  // cruz
+    ctx.moveTo(0,-h*0.82); ctx.lineTo(0,-h*0.42);
+    ctx.moveTo(-w*0.2,-h*0.68); ctx.lineTo(w*0.2,-h*0.68); ctx.stroke();
+  }
+  function obCat(w,h){
+    ctx.fillStyle='#0e0b14'; ctx.strokeStyle='#0e0b14';
+    ctx.lineCap='round'; ctx.lineWidth=w*0.12;        // cola
+    ctx.beginPath(); ctx.moveTo(w*0.26,-h*0.04);
+    ctx.quadraticCurveTo(w*0.52,-h*0.18,w*0.32,-h*0.44); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0,-h*0.22,w*0.3,h*0.24,0,0,7); ctx.fill();  // cuerpo
+    const hy=-h*0.62, hr=w*0.24;
+    ctx.beginPath(); ctx.arc(0,hy,hr,0,7); ctx.fill();                       // cabeza
+    ctx.beginPath();                                                         // orejas
+    ctx.moveTo(-hr*0.85,hy-hr*0.45); ctx.lineTo(-hr*1.15,hy-hr*1.5); ctx.lineTo(-hr*0.05,hy-hr*0.95); ctx.closePath();
+    ctx.moveTo(hr*0.85,hy-hr*0.45); ctx.lineTo(hr*1.15,hy-hr*1.5); ctx.lineTo(hr*0.05,hy-hr*0.95); ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle='#ffd23b';                                                 // ojos
+    ctx.beginPath(); ctx.ellipse(-hr*0.42,hy,hr*0.17,hr*0.3,0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(hr*0.42,hy,hr*0.17,hr*0.3,0,0,7); ctx.fill();
+  }
+  function obMirror(w,h){
+    ctx.fillStyle='#b9962f';                          // marco dorado
+    rr(-w/2,-h,w,h,w*0.16); ctx.fill();
+    ctx.fillStyle='#aeb9c6';                           // vidrio
+    rr(-w*0.34,-h*0.86,w*0.68,h*0.72,w*0.1); ctx.fill();
+    ctx.strokeStyle='#384350'; ctx.lineWidth=Math.max(1,w*0.045); ctx.lineCap='round';
+    ctx.beginPath();                                   // grietas
+    ctx.moveTo(0,-h*0.8); ctx.lineTo(w*0.06,-h*0.52); ctx.lineTo(-w*0.1,-h*0.26);
+    ctx.moveTo(w*0.06,-h*0.52); ctx.lineTo(w*0.24,-h*0.44);
+    ctx.moveTo(w*0.06,-h*0.52); ctx.lineTo(-w*0.2,-h*0.58); ctx.stroke();
+  }
+  function obCandle(w,h){
+    ctx.fillStyle='#ece4d4';                           // cuerpo
+    rr(-w*0.34,-h*0.7,w*0.68,h*0.7,w*0.12); ctx.fill();
+    ctx.fillStyle='#cfc6b2';
+    ctx.fillRect(-w*0.34,-h*0.7,w*0.68,h*0.06);
+    const fy=-h*0.86;                                  // halo
+    const g=ctx.createRadialGradient(0,fy,1,0,fy,w*0.8);
+    g.addColorStop(0,'rgba(255,200,90,.85)'); g.addColorStop(1,'rgba(255,150,50,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,fy,w*0.8,0,7); ctx.fill();
+    ctx.fillStyle='#ffb838';                           // llama
+    ctx.beginPath(); ctx.moveTo(0,-h*0.72);
+    ctx.quadraticCurveTo(w*0.2,-h*0.86,0,-h*1.04);
+    ctx.quadraticCurveTo(-w*0.2,-h*0.86,0,-h*0.72); ctx.fill();
+    ctx.fillStyle='#fff3c0';
+    ctx.beginPath(); ctx.moveTo(0,-h*0.8);
+    ctx.quadraticCurveTo(w*0.09,-h*0.87,0,-h*0.98);
+    ctx.quadraticCurveTo(-w*0.09,-h*0.87,0,-h*0.8); ctx.fill();
+  }
+
   // ---------- HUD ----------
   const relleno=document.getElementById('relleno');
   const vidasEl=document.getElementById('vidas');
   function progreso(p){ relleno.style.width=Math.min(100,p*100).toFixed(1)+'%'; }
-  function setVidas(){ vidasEl.textContent='🖤'.repeat(Math.max(0,lives))+'🤍'.repeat(Math.max(0,3-lives)); }
+  function setVidas(){
+    let s='';
+    for(let i=0;i<3;i++) s+='<span class="hp'+(i<lives?'':' off')+'">❤️</span>'; // ❤️ universal
+    vidasEl.innerHTML=s;
+  }
 
   // ---------- Transiciones de pantalla ----------
   const elInicio=document.getElementById('inicio');
