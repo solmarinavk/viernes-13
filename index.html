@@ -78,7 +78,7 @@
   #hud{
     position:fixed;top:0;left:0;right:0;z-index:5;
     display:flex;align-items:center;gap:10px;
-    padding:14px 16px calc(14px + env(safe-area-inset-top));
+    padding:calc(14px + env(safe-area-inset-top)) calc(66px + env(safe-area-inset-right)) 14px calc(16px + env(safe-area-inset-left));
     pointer-events:none;
   }
   #barra{
@@ -179,6 +179,10 @@
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
 
+  // ---------- Estado del juego (declarado antes de resize para evitar TDZ) ----------
+  let dist, speed, lives, invuln, shake;
+  let player=null, obstacles=[], bats=[], spawnX, jumps;
+
   // ---------- Dimensiones responsivas ----------
   let W=0,H=0,DPR=1,GROUND=0,SCALE=1;
   function resize(){
@@ -189,6 +193,11 @@
     ctx.setTransform(DPR,0,0,DPR,0,0);
     SCALE = Math.min(Math.max(Math.min(W,H)/520, .62), 1.25);
     GROUND = H - Math.max(70, H*0.16);
+    // al rotar/redimensionar, mantener al personaje proporcionado y sobre el piso
+    if(typeof player!=='undefined' && player){
+      player.w=64*SCALE; player.h=116*SCALE;
+      if(player.onGround) player.y=GROUND;
+    }
   }
   window.addEventListener('resize', resize);
   resize();
@@ -200,16 +209,18 @@
   sprite.src = 'personaje.png';
 
   // ---------- Motor de audio (Web Audio API, sin archivos) ----------
-  const Audio = (function(){
+  const SFX = (function(){
     let ac=null, master=null, muted=false, ambOn=false, ambNodes=[];
     function ensure(){
-      if(ac) { if(ac.state==='suspended') ac.resume(); return; }
       const AC = window.AudioContext||window.webkitAudioContext;
       if(!AC) return;
-      ac = new AC();
-      master = ac.createGain();
-      master.gain.value = muted?0:0.9;
-      master.connect(ac.destination);
+      if(!ac){
+        ac = new AC();
+        master = ac.createGain();
+        master.gain.value = muted?0:0.9;
+        master.connect(ac.destination);
+      }
+      if(ac.state==='suspended' && ac.resume) ac.resume(); // iOS/Safari arranca suspendido
     }
     function now(){ return ac.currentTime; }
     // tono simple con envolvente
@@ -306,51 +317,44 @@
   // ---------- Estado del juego ----------
   const META = 4200;          // distancia hasta la fiesta
   let state='menu';           // menu | play | dead | win
-  let dist, speed, lives, invuln, shake;
-  let player, obstacles, bats, spawnX, jumps;
 
   function reset(){
     dist=0; speed=4.2*SCALE; lives=3; invuln=0; shake=0;
     jumps=0;
     player={ x:W*0.22, y:GROUND, vy:0, w:64*SCALE, h:116*SCALE, onGround:true };
     obstacles=[]; bats=[];
-    spawnX = W + 200;
+    spawnX = W + 380;   // pequeño respiro antes del primer obstáculo
     setVidas();
   }
 
   // ---------- Obstáculos (símbolos de mala suerte) ----------
   const TIPOS=[
-    {e:'🪦',w:46,h:54,g:1},   // lápida
-    {e:'🐈‍⬛',w:50,h:40,g:1},  // gato negro
-    {e:'🪞',w:42,h:54,g:1},   // espejo
-    {e:'🕯️',w:30,h:50,g:1},   // vela
-    {e:'☂️',w:46,h:48,g:1},   // paraguas (mala suerte adentro)
-    {e:'🦇',w:48,h:40,g:0},   // murciélago volador (esquivar agachando = saltar bajo)
+    {e:'🪦',w:46,h:54},   // lápida
+    {e:'🐈‍⬛',w:50,h:42},  // gato negro
+    {e:'🪞',w:42,h:54},   // espejo roto
+    {e:'🕯️',w:30,h:50},   // vela
+    {e:'☂️',w:46,h:48},   // paraguas (mala suerte adentro)
+    {e:'🧂',w:40,h:46},   // sal derramada
   ];
 
-  function spawn(){
-    // distancia entre obstáculos depende de la velocidad
-    const gap = (260 + Math.random()*220) * (0.9 + speed/14);
-    if(spawnX <= W + 60){
+  // Genera obstáculos a ritmo constante (independiente del framerate)
+  function spawn(dt){
+    spawnX -= speed*dt;
+    if(spawnX <= W){
       const t = TIPOS[(Math.random()*TIPOS.length)|0];
-      const fly = t.g===0;
-      obstacles.push({
-        e:t.e, w:t.w*SCALE, h:t.h*SCALE,
-        x: W + 60,
-        y: fly ? GROUND - (90+Math.random()*40)*SCALE : GROUND,
-        fly, hit:false
-      });
-      spawnX = W + 60 + gap;
+      obstacles.push({ e:t.e, w:t.w*SCALE, h:t.h*SCALE, x:W+40, y:GROUND, hit:false });
+      // separación segura: siempre mayor al alcance de un salto
+      const gap = (340 + Math.random()*200) * (0.9 + speed/16);
+      spawnX = W + gap;
     }
-    spawnX -= speed;
   }
 
   function jump(){
     if(state==='menu'||state==='dead'||state==='win') return;
     if(player.onGround){
-      player.vy = -13.5*Math.sqrt(SCALE); player.onGround=false; jumps=1; Audio.fx.jump();
+      player.vy = -13.5*Math.sqrt(SCALE); player.onGround=false; jumps=1; SFX.fx.jump();
     } else if(jumps<2){
-      player.vy = -11.5*Math.sqrt(SCALE); jumps=2; Audio.fx.djump();   // doble salto
+      player.vy = -11.5*Math.sqrt(SCALE); jumps=2; SFX.fx.djump();   // doble salto
     }
   }
 
@@ -366,7 +370,7 @@
   }
 
   function update(dt){
-    speed += 0.0016*dt;                 // acelera lento
+    speed = Math.min(speed + 0.0016*dt, 9.5*SCALE);   // acelera lento, con tope
     dist += speed*dt;
     progreso(dist/META);
 
@@ -375,17 +379,17 @@
     player.y += player.vy*dt;
     if(player.y>=GROUND){ player.y=GROUND; player.vy=0; player.onGround=true; jumps=0; }
 
-    // generar obstáculos
-    if(dist < META-700){ for(let i=0;i<dt;i++) spawn(); }
+    // generar obstáculos (deja una pista limpia hacia la mansión al final)
+    if(dist < META-700) spawn(dt);
 
-    // mover obstáculos + colisión
+    // mover obstáculos + colisión (AABB con caja de impacto indulgente)
+    const pHalf=player.w*0.30, pTop=player.y-player.h, pBot=player.y;
     for(const o of obstacles){
       o.x -= speed*dt;
       if(!o.hit && invuln<=0){
-        const px=player.x, pw=player.w*0.5, py=player.y-player.h, ph=player.h;
-        const ox=o.x, ow=o.w, oy=o.y-o.h, oh=o.h;
-        if(px+pw*0.5 > ox-ow*0.4 && px-pw*0.5 < ox+ow*0.4 &&
-           py+ph > oy && py < oy+oh){
+        const oHalf=o.w*0.40, oTop=o.y-o.h, oBot=o.y;
+        if(player.x+pHalf > o.x-oHalf && player.x-pHalf < o.x+oHalf &&
+           pBot > oTop && pTop < oBot){
           o.hit=true; golpe();
         }
       }
@@ -405,7 +409,7 @@
   }
 
   function golpe(){
-    lives--; setVidas(); invuln=70; shake=14; Audio.fx.hit();
+    lives--; setVidas(); invuln=70; shake=14; SFX.fx.hit();
     if(lives<=0) dead();
   }
 
@@ -454,10 +458,9 @@
     // silueta de árboles/lápidas de fondo (parallax)
     siluetas();
 
-    // mansión al final (aparece al acercarse)
-    if(dist>META-W*1.4){
-      const hx = W*0.5 + (META-dist) - W*0.0;
-      mansion(W - (META-dist)*0.9, GROUND);
+    // mansión al final: entra desde la derecha y se acerca al personaje
+    if(dist > META - W*1.4){
+      mansion(W*0.2 + (META-dist), GROUND);
     }
 
     // suelo
@@ -474,13 +477,11 @@
     // obstáculos
     ctx.textAlign='center'; ctx.textBaseline='alphabetic';
     for(const o of obstacles){
-      ctx.save();
-      ctx.font = Math.round(o.h)+'px serif';
-      if(o.fly){ ctx.translate(0,Math.sin(performance.now()*0.005+o.x)*6); }
       ctx.globalAlpha = o.hit?0.25:1;
-      ctx.fillText(o.e, o.x, o.y);
-      ctx.restore();
+      ctx.font = Math.round(o.h)+'px serif';
+      ctx.fillText(o.e, o.x, o.y+2);
     }
+    ctx.globalAlpha=1;
 
     // jugador
     drawPlayer();
@@ -584,10 +585,10 @@
   function start(){
     reset(); state='play';
     hide(elInicio); hide(elDerrota); hide(elVictoria); show(elHud);
-    Audio.ensure(); Audio.ambient(true);
+    SFX.ensure(); SFX.ambient(true);
   }
-  function dead(){ state='dead'; hide(elHud); show(elDerrota); Audio.ambient(false); Audio.fx.dead(); }
-  function win(){ state='win'; hide(elHud); show(elVictoria); Audio.ambient(false); Audio.fx.win(); }
+  function dead(){ state='dead'; hide(elHud); show(elDerrota); SFX.ambient(false); SFX.fx.dead(); }
+  function win(){ state='win'; hide(elHud); show(elVictoria); SFX.ambient(false); SFX.fx.win(); }
 
   document.getElementById('jugar').addEventListener('click', start);
   document.getElementById('reintentar').addEventListener('click', start);
@@ -597,8 +598,9 @@
   const muteBtn=document.getElementById('mute');
   muteBtn.addEventListener('pointerdown', e=>{
     e.preventDefault(); e.stopPropagation();
-    const m=Audio.toggle();
+    const m=SFX.toggle();
     muteBtn.textContent = m?'🔇':'🔊';
+    muteBtn.setAttribute('aria-label', m?'Activar sonido':'Silenciar');
   });
 
   // ---------- Controles ----------
@@ -608,10 +610,10 @@
   }
   window.addEventListener('pointerdown', onTap, {passive:false});
   window.addEventListener('keydown', e=>{
-    if(e.code==='Space'||e.code==='ArrowUp'){
+    if(e.code==='Space'||e.code==='ArrowUp'||e.code==='Enter'){
       e.preventDefault();
       if(state==='play') jump();
-      else if(state==='menu') start();
+      else start();            // menú, derrota o victoria → (re)comenzar
     }
   });
 
