@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0a0010">
-<title>Viernes 13 · La Invitación</title>
+<meta name="description" content="13.º Aniversario · Una noche de Terror, Drama & Chic. Encuentra tu invitación.">
+<title>XIII · 13.º Aniversario — Terror, Drama & Chic</title>
 <style>
   :root{
     --rojo:#c1121f;
@@ -152,11 +153,105 @@
   .dato .txt span{color:#c3b4cc;font-size:14px;line-height:1.4;}
   .firma{color:#8a7b94;font-style:italic;font-size:13px;margin-top:18px;}
   .tarjeta .btn{margin-top:24px;padding:13px 30px;font-size:17px;}
+
+  /* ====== SPLASH DE ENTRADA (logo + terror) ====== */
+  .splash{background:radial-gradient(ellipse at 50% 42%,rgba(40,0,18,.7),#050009 70%);}
+  .splash::before{ /* salpicadura de sangre superior */
+    content:"";position:absolute;top:-6%;left:50%;transform:translateX(-50%);
+    width:min(420px,80vw);height:min(260px,40vh);pointer-events:none;opacity:.8;
+    background:
+      radial-gradient(circle at 30% 30%,rgba(150,8,16,.9) 0 6px,transparent 7px),
+      radial-gradient(circle at 62% 18%,rgba(150,8,16,.85) 0 10px,transparent 11px),
+      radial-gradient(circle at 72% 40%,rgba(120,6,12,.8) 0 5px,transparent 6px),
+      radial-gradient(ellipse at 50% 0%,rgba(120,6,12,.55),transparent 60%);
+    filter:blur(.3px);
+  }
+  .logo-wrap{position:relative;display:flex;flex-direction:column;align-items:center;}
+  .logoR{
+    width:clamp(120px,34vw,220px);height:auto;
+    animation:logoIn .8s cubic-bezier(.2,1.2,.3,1) both, flicker 4.2s linear .8s infinite;
+  }
+  @keyframes logoIn{0%{transform:scale(.55) rotate(-3deg);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+  @keyframes flicker{
+    0%,18%,22%,55%,57%,80%,100%{opacity:1;filter:drop-shadow(0 0 28px rgba(225,30,40,.9)) drop-shadow(0 0 7px rgba(255,255,255,.45));}
+    20%{opacity:.22;filter:drop-shadow(0 0 6px rgba(225,30,40,.4));}
+    56%{opacity:.55;filter:drop-shadow(0 0 14px rgba(225,30,40,.6));}
+    73%,75%{opacity:.35;}
+  }
+  .splash-13{
+    margin-top:18px;font-family:Georgia,'Times New Roman',serif;font-weight:bold;
+    font-size:clamp(46px,16vw,120px);line-height:.9;letter-spacing:6px;color:#fff;
+    text-shadow:0 0 22px rgba(225,30,40,.95),0 3px 0 #5a060c,0 0 4px #000;
+    animation:reveal13 1s ease .5s both;
+  }
+  @keyframes reveal13{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:none}}
+  .splash-sub{margin-top:8px;color:#d7b9c2;letter-spacing:5px;font-size:clamp(11px,3.4vw,15px);text-transform:uppercase;animation:reveal13 1s ease .9s both;}
+  .splash-tip{margin-top:30px;color:#9a8aa4;font-size:13px;letter-spacing:2px;animation:pulso 1.6s ease-in-out 1.3s infinite;}
+  @keyframes pulso{0%,100%{opacity:.35}50%{opacity:1}}
+
+  /* logo en menú / tarjeta */
+  .logo-menu{width:clamp(72px,18vw,108px);height:auto;margin-bottom:10px;
+    filter:drop-shadow(0 0 16px rgba(225,30,40,.7));animation:flicker 5s linear infinite;}
+  .card-logo{width:54px;height:auto;margin:0 auto 8px;display:block;filter:drop-shadow(0 0 10px rgba(225,30,40,.6));}
+  .tema{color:#e7b8c0;letter-spacing:3px;font-size:12px;text-transform:uppercase;margin-top:4px;}
+
+  /* botones de acción (UX: mapa, calendario, dress code) */
+  .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px;}
+  .act{
+    display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    font-family:inherit;font-size:12.5px;letter-spacing:.3px;color:#ffd4d9;text-decoration:none;
+    border:1px solid rgba(255,90,100,.5);border-radius:30px;padding:7px 13px;
+    background:rgba(255,90,100,.08);transition:transform .1s ease,background .2s ease;
+  }
+  .act:hover{background:rgba(255,90,100,.18);}
+  .act:active{transform:scale(.95);}
+
+  /* paleta de colores */
+  .paleta{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+  .sw{width:26px;height:26px;border-radius:6px;border:1px solid rgba(255,255,255,.22);box-shadow:0 2px 6px rgba(0,0,0,.5);}
+  .paleta.big .sw{width:34px;height:34px;}
+
+  /* ====== PANEL DRESS CODE ====== */
+  .dc-card{
+    background:linear-gradient(180deg,rgba(28,2,12,.97),rgba(10,0,7,.98));
+    border:1px solid rgba(255,90,100,.45);border-radius:22px;
+    box-shadow:0 0 50px rgba(193,18,31,.4),inset 0 0 30px rgba(0,0,0,.6);
+    padding:26px 24px;max-width:460px;width:100%;text-align:left;position:relative;overflow:hidden;
+  }
+  .dc-title{
+    font-family:Georgia,serif;font-weight:bold;text-align:center;
+    font-size:clamp(30px,9vw,46px);letter-spacing:3px;color:#e0232a;line-height:1;
+    text-shadow:0 0 18px rgba(225,30,40,.85),0 2px 0 #4a060a;margin-bottom:4px;
+  }
+  .dc-drip{display:block;height:14px;margin:-2px auto 14px;width:70%;
+    background:radial-gradient(circle at 10% 0,#b00d14 0 3px,transparent 4px) repeat-x;
+    background-size:22px 14px;opacity:.7;-webkit-mask:linear-gradient(#000,transparent);mask:linear-gradient(#000,transparent);}
+  .dc-block{margin:14px 0;}
+  .dc-block h4,.dc-col h4{color:#ff8a93;font-size:12px;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px;}
+  .dc-block p{color:#e9dce6;font-size:15px;}
+  .dc-cols{display:flex;gap:16px;margin:14px 0;}
+  .dc-col{flex:1;}
+  .dc-col ul{list-style:none;}
+  .dc-col li{color:#cdbcd2;font-size:13.5px;line-height:1.4;margin:6px 0;padding-left:16px;position:relative;}
+  .dc-col.do li::before{content:"✔";position:absolute;left:0;color:#5fd07a;}
+  .dc-col.dont li::before{content:"✘";position:absolute;left:0;color:#ff5a64;}
+  .dc-sep{width:1px;background:linear-gradient(transparent,rgba(255,90,100,.4),transparent);}
+  .act-moodboard{display:block;text-align:center;margin-top:18px;text-decoration:none;}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <button id="mute" aria-label="Sonido">🔊</button>
+
+<!-- Splash de entrada -->
+<div id="splash" class="overlay splash">
+  <div class="logo-wrap">
+    <img class="logoR" src="logo-r.png?v=1" alt="Logo R" draggable="false">
+  </div>
+  <div class="splash-13">XIII</div>
+  <div class="splash-sub">Trece años · Una noche</div>
+  <div class="splash-tip">toca para entrar</div>
+</div>
 
 <!-- HUD -->
 <div id="hud" class="hidden">
@@ -167,13 +262,13 @@
 </div>
 
 <!-- Pantalla de inicio -->
-<div id="inicio" class="overlay">
-  <div class="luna13">🌑</div>
-  <div class="titulo"><span class="v">VIERNES 13</span><span class="t">La Invitación Maldita</span></div>
-  <p class="sub"><b>Objetivo:</b> guía a la dama de rojo hasta la <b>mansión</b> saltando
-  por encima de la mala suerte (gatos negros, lápidas, espejos rotos…).
-  Si llegas, <b>se revela tu invitación</b>.</p>
-  <button class="btn" id="jugar">▸ EMPEZAR EL CAMINO</button>
+<div id="inicio" class="overlay hidden">
+  <img class="logo-menu" src="logo-r.png?v=1" alt="Logo R" draggable="false">
+  <div class="titulo"><span class="v">13.º ANIVERSARIO</span><span class="t">Terror · Drama · Chic</span></div>
+  <p class="sub">Durante <b>13 años</b> desafiamos a la mala suerte… y seguimos en pie.
+  Ayuda a la dama de rojo a <b>cruzar la noche del número maldito</b>: esquiva la mala suerte
+  y llega a la celebración para descubrir <b>tu invitación</b>.</p>
+  <button class="btn" id="jugar">▸ CRUZAR LA NOCHE</button>
   <p class="tip">📱 Toca la pantalla &nbsp;·&nbsp; ⌨️ ESPACIO para saltar</p>
 </div>
 
@@ -181,23 +276,89 @@
 <div id="derrota" class="overlay hidden">
   <div class="luna13">💀</div>
   <div class="titulo"><span class="t">La mala suerte te alcanzó…</span></div>
-  <p class="sub">Pero el destino da segundas oportunidades.</p>
+  <p class="sub">Pero 13 años nos enseñaron a levantarnos.<br>La noche te espera otra vez.</p>
   <button class="btn" id="reintentar">VOLVER A INTENTAR ↺</button>
 </div>
 
 <!-- Pantalla de victoria / invitación -->
 <div id="victoria" class="overlay hidden">
   <div class="tarjeta">
-    <div class="ganaste">🎉 ¡LLEGASTE A LA MANSIÓN! 🎉</div>
-    <div class="estas">Cruzaste la noche de la mala suerte.<br>Este es tu premio — quedas invitado(a) a:</div>
-    <h2>La Noche del Viernes 13</h2>
+    <img class="card-logo" src="logo-r.png?v=1" alt="Logo R" draggable="false">
+    <div class="ganaste">¡SOBREVIVISTE LA NOCHE!</div>
+    <div class="estas">Cruzaste 13 años de mala suerte.<br>Estás oficialmente invitado(a) a:</div>
+    <h2>13.º Aniversario</h2>
+    <div class="tema">Terror · Drama · Chic</div>
     <div class="linea"></div>
-    <div class="dato"><div class="ic">📍</div><div class="txt"><b>Dónde</b><span>Mansión Calle Cuervo 1313<br>Barrio La Niebla — Salón "El Espejo Roto"</span></div></div>
-    <div class="dato"><div class="ic">🕛</div><div class="txt"><b>Cuándo</b><span>Viernes 13 · 11:13 p.m.<br>(la maldición no espera a nadie)</span></div></div>
-    <div class="dato"><div class="ic">🔴</div><div class="txt"><b>Dress code</b><span>Rojo sangre &amp; negro fantasma.<br>Un toque de "13" suma suerte.</span></div></div>
+
+    <div class="dato">
+      <div class="ic">📍</div>
+      <div class="txt"><b>Dónde</b><span>Jr. El Bucaré N.° 125<br>Urb. Camacho — La Molina, Lima</span>
+        <div class="acts"><a class="act" id="mapsBtn" target="_blank" rel="noopener">🗺️ Ver en el mapa</a></div>
+      </div>
+    </div>
+
+    <div class="dato">
+      <div class="ic">🗓️</div>
+      <div class="txt"><b>Cuándo</b><span>Viernes 3 de julio · 11:00 a.m.</span>
+        <div class="acts">
+          <a class="act" id="gcalBtn" target="_blank" rel="noopener">📅 Agregar al calendario</a>
+          <a class="act" id="icsBtn" download="13-aniversario.ics">⬇️ .ics</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="dato">
+      <div class="ic">🔴</div>
+      <div class="txt"><b>Dress code</b><span>Terror · Drama · Chic</span>
+        <div class="paleta">
+          <span class="sw" style="background:#3c3d41"></span>
+          <span class="sw" style="background:#6e4a2d"></span>
+          <span class="sw" style="background:#8a1014"></span>
+          <span class="sw" style="background:#e0232a"></span>
+          <span class="sw" style="background:#ffffff"></span>
+          <span class="sw" style="background:linear-gradient(135deg,#e9ebed,#a9adb2)"></span>
+        </div>
+        <div class="acts"><button class="act" id="verDC">✦ Ver dress code completo</button></div>
+      </div>
+    </div>
+
     <div class="linea"></div>
-    <p class="firma">«Toma una captura de pantalla para no perder los datos.»</p>
+    <p class="firma">«Toma una captura para no perder los datos.»</p>
     <button class="btn btn-sec" id="otra">↺ jugar otra vez</button>
+  </div>
+</div>
+
+<!-- Panel Dress Code -->
+<div id="dresscode" class="overlay hidden">
+  <div class="dc-card">
+    <div class="dc-title">DRESS CODE</div>
+    <span class="dc-drip"></span>
+    <div class="dc-block"><h4>Temática</h4><p>Terror · Drama · Chic</p></div>
+    <div class="dc-block"><h4>Paleta de colores</h4>
+      <div class="paleta big">
+        <span class="sw" style="background:#3c3d41"></span>
+        <span class="sw" style="background:#6e4a2d"></span>
+        <span class="sw" style="background:#8a1014"></span>
+        <span class="sw" style="background:#e0232a"></span>
+        <span class="sw" style="background:#ffffff"></span>
+        <span class="sw" style="background:linear-gradient(135deg,#e9ebed,#a9adb2)"></span>
+      </div>
+    </div>
+    <div class="dc-block"><h4>Condiciones</h4><p>Cómodo y flexible · Sal de tu zona de confort.</p></div>
+    <div class="dc-cols">
+      <div class="dc-col do"><h4>Sí va</h4><ul>
+        <li>Texturas: encajes, cuero, brillos, satín</li>
+        <li>Accesorios plateados</li>
+        <li>Tonos oscuros o derivados de la paleta</li>
+      </ul></div>
+      <div class="dc-sep"></div>
+      <div class="dc-col dont"><h4>No va</h4><ul>
+        <li>No es velorio</li>
+        <li>Colores fuertes o fuera de la paleta (verdes brillantes, amarillo, azules)</li>
+      </ul></div>
+    </div>
+    <a class="btn act-moodboard" id="moodboardBtn" href="https://canva.link/aul5fcqrnbsppvf" target="_blank" rel="noopener">✦ Ver moodboard de outfits</a>
+    <button class="btn btn-sec" id="cerrarDC" style="display:block;margin:14px auto 0;">← Volver a la invitación</button>
   </div>
 </div>
 
@@ -343,8 +504,8 @@
   })();
 
   // ---------- Estado del juego ----------
-  const META = 4200;          // distancia hasta la fiesta
-  let state='menu';           // menu | play | dead | win
+  const META = 4200;          // distancia hasta la celebración
+  let state='splash';         // splash | menu | play | dead | win
 
   function reset(){
     dist=0; speed=4.2*SCALE; lives=3; invuln=0; shake=0;
@@ -690,24 +851,59 @@
   }
 
   // ---------- Transiciones de pantalla ----------
+  const elSplash=document.getElementById('splash');
   const elInicio=document.getElementById('inicio');
   const elDerrota=document.getElementById('derrota');
   const elVictoria=document.getElementById('victoria');
+  const elDresscode=document.getElementById('dresscode');
   const elHud=document.getElementById('hud');
   function show(el){ el.classList.remove('hidden'); }
   function hide(el){ el.classList.add('hidden'); }
 
+  // --- Splash de entrada -> Menú ---
+  const splashTimer=setTimeout(goMenu, 4200);
+  function goMenu(){
+    if(state!=='splash') return;
+    clearTimeout(splashTimer);
+    state='menu'; hide(elSplash); show(elInicio);
+    SFX.ensure();   // intenta desbloquear el audio temprano (si vino de un gesto)
+  }
+
   function start(){
     reset(); state='play';
-    hide(elInicio); hide(elDerrota); hide(elVictoria); show(elHud);
+    hide(elSplash); hide(elInicio); hide(elDerrota); hide(elVictoria); hide(elDresscode); show(elHud);
     SFX.ensure(); SFX.ambient(true);
   }
   function dead(){ state='dead'; hide(elHud); show(elDerrota); SFX.ambient(false); SFX.fx.dead(); }
   function win(){ state='win'; hide(elHud); show(elVictoria); SFX.ambient(false); SFX.fx.win(); }
 
+  // --- Panel Dress code (se superpone a la invitación) ---
+  let dcOpen=false;
+  function openDC(){ dcOpen=true; show(elDresscode); }
+  function closeDC(){ dcOpen=false; hide(elDresscode); }
+
   document.getElementById('jugar').addEventListener('click', start);
   document.getElementById('reintentar').addEventListener('click', start);
   document.getElementById('otra').addEventListener('click', start);
+  document.getElementById('verDC').addEventListener('click', e=>{ e.stopPropagation(); openDC(); });
+  document.getElementById('cerrarDC').addEventListener('click', e=>{ e.stopPropagation(); closeDC(); });
+
+  // --- Enlaces UX: mapa + calendario (.ics universal y Google Calendar) ---
+  (function setupLinks(){
+    const dir='Jr. El Bucaré 125, Urbanización Camacho, La Molina, Lima';
+    const titulo='13.º Aniversario — Terror, Drama & Chic';
+    const det='Dress code: Terror · Drama · Chic. ¡Te esperamos!';
+    const ini='20260703T160000Z', fin='20260703T190000Z';  // 11:00–14:00 Lima (UTC-5)
+    document.getElementById('mapsBtn').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(dir);
+    document.getElementById('gcalBtn').href='https://calendar.google.com/calendar/render?action=TEMPLATE'
+      +'&text='+encodeURIComponent(titulo)+'&dates='+ini+'/'+fin
+      +'&location='+encodeURIComponent(dir)+'&details='+encodeURIComponent(det);
+    const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//R//13 Aniversario//ES','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+      'BEGIN:VEVENT','UID:13-aniversario-20260703@evento','DTSTAMP:20260626T000000Z',
+      'DTSTART:'+ini,'DTEND:'+fin,'SUMMARY:'+titulo,'LOCATION:'+dir,'DESCRIPTION:'+det,
+      'END:VEVENT','END:VCALENDAR'].join('\r\n');
+    document.getElementById('icsBtn').href='data:text/calendar;charset=utf-8,'+encodeURIComponent(ics);
+  })();
 
   // ---------- Botón de sonido ----------
   const muteBtn=document.getElementById('mute');
@@ -721,14 +917,19 @@
   // ---------- Controles ----------
   function onTap(e){
     if(e.target && e.target.closest && e.target.closest('#mute')) return;
+    if(e.target && e.target.closest && e.target.closest('.overlay:not(.splash)')) return; // no saltar al tocar botones/paneles
+    if(state==='splash'){ goMenu(); return; }
     if(state==='play'){ e.preventDefault(); jump(); }
   }
   window.addEventListener('pointerdown', onTap, {passive:false});
   window.addEventListener('keydown', e=>{
+    if(e.code==='Escape'){ if(dcOpen){ e.preventDefault(); closeDC(); } return; }
     if(e.code==='Space'||e.code==='ArrowUp'||e.code==='Enter'){
       e.preventDefault();
+      if(dcOpen){ closeDC(); return; }
+      if(state==='splash'){ goMenu(); return; }
       if(state==='play') jump();
-      else start();            // menú, derrota o victoria → (re)comenzar
+      else if(state==='menu'||state==='dead'||state==='win') start();
     }
   });
 
