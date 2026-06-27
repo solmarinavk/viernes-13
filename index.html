@@ -307,6 +307,33 @@
     *,*::before,*::after{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.06s !important;}
     .shimmer::after,.logo-halo{display:none;}
   }
+
+  /* ====== Compactar en celular para que la tarjeta entre mejor ====== */
+  @media (max-width:430px){
+    .overlay{padding-top:max(14px,env(safe-area-inset-top));padding-bottom:max(16px,env(safe-area-inset-bottom));}
+    .tarjeta{padding:22px 18px;}
+    .card-logo{width:44px;margin-bottom:4px;}
+    .ganaste{font-size:clamp(16px,5.2vw,20px);margin-bottom:6px;}
+    .tarjeta .estas{font-size:12.5px;margin-bottom:4px;}
+    .tarjeta h2{font-size:clamp(20px,6.6vw,28px);}
+    .tema{font-size:11px;}
+    .countdown{margin:6px 0 0;gap:6px;}
+    .cd-box{min-width:50px;padding:6px 4px;}
+    .cd-num{font-size:clamp(18px,5.6vw,24px);}
+    #stat{font-size:11px;margin-top:6px;}
+    .linea{margin:12px 0;}
+    .dato{margin:11px 0;gap:12px;}
+    .dato .ic{font-size:22px;width:28px;}
+    .dato .txt b{font-size:15px;}
+    .dato .txt span{font-size:13.5px;}
+    .acts{margin-top:7px;gap:7px;}
+    .act{padding:8px 12px;font-size:12px;}
+    .firma{margin-top:12px;font-size:12px;}
+    .tarjeta .btn{margin-top:16px;}
+    .dc-card{padding:20px 18px;}
+    .dc-block{margin:11px 0;}
+    .dc-cols{gap:12px;}
+  }
 </style>
 </head>
 <body>
@@ -406,10 +433,6 @@
     </div>
 
     <div class="linea"></div>
-    <div class="acts" style="justify-content:center">
-      <button class="act" id="shareBtn">↗ Compartir</button>
-      <button class="act featured" id="installBtn" hidden>⤓ Instalar app</button>
-    </div>
     <p class="firma">«Toma una captura para no perder los datos.»</p>
     <button class="btn btn-sec" id="otra">↺ jugar otra vez</button>
   </div>
@@ -1248,7 +1271,8 @@
       }catch(_){ resolve(null); }
     });
   }
-  document.getElementById('shareBtn').addEventListener('click', async e=>{ e.stopPropagation();
+  const _shareBtn=document.getElementById('shareBtn');
+  _shareBtn && _shareBtn.addEventListener('click', async e=>{ e.stopPropagation();
     const text='¡Estás invitado(a) al 13.º Aniversario — Terror, Drama & Chic! Viernes 3 de julio, 11:00 a.m., La Molina.';
     try{
       const blob = shareBlob || await buildShareCard();
@@ -1259,13 +1283,7 @@
     }catch(err){ if(err && err.name!=='AbortError') toast('No se pudo compartir'); }
   });
 
-  // PWA instalable
-  let deferredPrompt=null; const installBtn=document.getElementById('installBtn');
-  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; if(installBtn) installBtn.hidden=false; });
-  if(installBtn) installBtn.addEventListener('click', async e=>{ e.stopPropagation();
-    if(!deferredPrompt) return; deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){}
-    deferredPrompt=null; installBtn.hidden=true;
-  });
+  // PWA: registramos el SW (instalación nativa del navegador; sin botón propio)
   if('serviceWorker' in navigator) window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 
   // Tilt 3D de la tarjeta (mouse + giroscopio) con lerp
