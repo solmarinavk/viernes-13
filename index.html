@@ -374,7 +374,7 @@
       <div class="ic">📍</div>
       <div class="txt"><b>Dónde</b><span>Jr. El Bucaré N.° 125<br>Urb. Camacho — La Molina, Lima</span>
         <div class="acts">
-          <a class="act" id="mapsBtn" target="_blank" rel="noopener">🗺️ Ver en el mapa</a>
+          <a class="act" id="mapsBtn" href="https://maps.app.goo.gl/RqKF8xtbLR2bY8Qy9" target="_blank" rel="noopener">🗺️ Ver en el mapa</a>
           <button class="act" id="copyDir">⧉ Copiar dirección</button>
         </div>
       </div>
@@ -606,7 +606,7 @@
   })();
 
   // ---------- Estado del juego ----------
-  const META = 4200;          // distancia hasta la celebración
+  const META = 6000;          // distancia hasta la celebración (camino más largo)
   let state='splash';         // splash | menu | play | dead | win
 
   function reset(){
@@ -1137,7 +1137,7 @@
     if(state!=='splash') return;
     clearTimeout(splashTimer);
     state='menu'; hide(elSplash); show(elInicio);
-    SFX.ensure();   // intenta desbloquear el audio temprano (si vino de un gesto)
+    SFX.ensure(); SFX.ambient(true); speakCreepy();   // sonido + voz desde que se entra
   }
 
   function start(){
@@ -1173,7 +1173,7 @@
     const titulo='13.º Aniversario — Terror, Drama & Chic';
     const det='Dress code: Terror · Drama · Chic. ¡Te esperamos!';
     const ini='20260703T160000Z', fin='20260703T190000Z';  // 11:00–14:00 Lima (UTC-5)
-    document.getElementById('mapsBtn').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(dir);
+    // #mapsBtn usa el enlace exacto del pin (fijado en el HTML); no lo sobreescribimos aquí.
     document.getElementById('gcalBtn').href='https://calendar.google.com/calendar/render?action=TEMPLATE'
       +'&text='+encodeURIComponent(titulo)+'&dates='+ini+'/'+fin
       +'&location='+encodeURIComponent(dir)+'&details='+encodeURIComponent(det);
@@ -1200,6 +1200,21 @@
 
   let toastT;
   function toast(msg){ const t=document.getElementById('toast'); if(!t) return; t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+  // Voz tenebrosa de bienvenida (una sola vez, tras el gesto de entrada)
+  let spoke=false;
+  function speakCreepy(){
+    if(spoke) return; spoke=true;
+    try{
+      if(reduce || SFX.isMuted() || !('speechSynthesis' in window)) return;
+      const say=()=>{ const u=new SpeechSynthesisUtterance('Trece años… bienvenido a la noche del trece.');
+        u.lang='es-ES'; u.rate=0.72; u.pitch=0.15; u.volume=0.9;
+        const vs=speechSynthesis.getVoices(); const es=vs.find(v=>/es/i.test(v.lang)); if(es) u.voice=es;
+        speechSynthesis.cancel(); speechSynthesis.speak(u); };
+      // las voces pueden cargar async
+      if(speechSynthesis.getVoices().length) say(); else setTimeout(say,250);
+    }catch(_){}
+  }
 
   document.getElementById('copyDir').addEventListener('click', async e=>{ e.stopPropagation();
     try{ await navigator.clipboard.writeText(DIR); toast('Dirección copiada ✓'); }
@@ -1284,6 +1299,7 @@
     const m=SFX.toggle();
     muteBtn.textContent = m?'🔇':'🔊';
     muteBtn.setAttribute('aria-label', m?'Activar sonido':'Silenciar');
+    if(m && 'speechSynthesis' in window){ try{ speechSynthesis.cancel(); }catch(_){} }
   });
 
   // ---------- Controles ----------
