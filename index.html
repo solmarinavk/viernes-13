@@ -519,9 +519,13 @@
   sprite.src = 'personaje.png?v=3';   // ?v fuerza recarga si el navegador la tenía cacheada
   const logoImg = new Image(); logoImg.src = 'logo-r.png?v=1';
 
-  // ---------- Motor de audio (Web Audio API, sin archivos) ----------
+  // ---------- Motor de audio (Web Audio API) ----------
   const SFX = (function(){
     let ac=null, master=null, muted=false, ambOn=false, ambNodes=[];
+    let voiceBuf=null, voiceRaw=null;
+    // Precarga opcional de una voz grabada (voz.mp3). Si existe, se usa en todos los dispositivos.
+    try{ fetch('voz.mp3').then(r=> r.ok? r.arrayBuffer():null).then(ab=>{ if(ab){ voiceRaw=ab; decodeVoice(); } }).catch(()=>{}); }catch(_){}
+    function decodeVoice(){ if(!ac||!voiceRaw||voiceBuf) return; try{ ac.decodeAudioData(voiceRaw.slice(0), b=>{ voiceBuf=b; }, ()=>{}); }catch(_){} }
     function ensure(){
       const AC = window.AudioContext||window.webkitAudioContext;
       if(!AC) return;
@@ -532,6 +536,7 @@
         master.connect(ac.destination);
         // desbloqueo iOS: reproducir un buffer mudo dentro del gesto del usuario
         try{ const b=ac.createBuffer(1,1,22050), s=ac.createBufferSource(); s.buffer=b; s.connect(ac.destination); s.start(0); }catch(_){}
+        decodeVoice();
       }
       if(ac.state==='suspended' && ac.resume){ try{ ac.resume(); }catch(_){} } // iOS/Safari arranca suspendido
     }
@@ -578,6 +583,18 @@
     }
     // --- efectos del juego ---
     const fx = {
+      // Voz grabada (voz.mp3) si existe: grave + eco fantasmal. Devuelve true si sonó.
+      voice(){
+        if(!ac||muted||!voiceBuf) return false;
+        const t=now()+0.05;
+        const src=ac.createBufferSource(); src.buffer=voiceBuf; try{ src.playbackRate.value=0.86; }catch(_){}
+        const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2800;
+        const g=ac.createGain(); g.gain.value=1.0;
+        const dl=ac.createDelay(); dl.delayTime.value=0.19; const fb=ac.createGain(); fb.gain.value=0.22;
+        src.connect(lp); lp.connect(g); g.connect(master);
+        lp.connect(dl); dl.connect(fb); fb.connect(dl); dl.connect(master);
+        src.start(t); return true;
+      },
       // saltos con aire fantasmal (whoosh) en vez del "blip" arcade
       jump(){ swoosh(280,1500,0.30,0.20); tone(150,0.26,'sine',0.10,330); },
       djump(){ swoosh(700,2400,0.26,0.17); tone(300,0.22,'sine',0.08,620); tone(450,0.2,'sine',0.05,900); },
@@ -1380,7 +1397,9 @@
   function unlockAudio(){
     SFX.ensure();
     if(audioUnlocked) return; audioUnlocked=true;
-    SFX.ambient(true); SFX.fx.whisper(); speakCreepy();
+    SFX.ambient(true);
+    // Si hay voz grabada (voz.mp3) suena en todos los equipos; si no, susurro + intento de TTS.
+    if(!SFX.fx.voice()){ SFX.fx.whisper(); speakCreepy(); }
   }
   ['pointerdown','touchstart','keydown'].forEach(ev=> window.addEventListener(ev, unlockAudio, {capture:true}));
 
