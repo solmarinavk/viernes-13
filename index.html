@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0a0010">
 <meta name="description" content="13.º Aniversario · Una noche de Terror, Drama & Chic. Encuentra tu invitación.">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="XIII">
+<meta property="og:title" content="13.º Aniversario — Terror, Drama & Chic">
+<meta property="og:description" content="Cruza la noche del número maldito y descubre tu invitación.">
+<meta property="og:type" content="website">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>XIII · 13.º Aniversario — Terror, Drama & Chic</title>
 <style>
   :root{
@@ -21,6 +31,7 @@
     touch-action:none;
   }
   #game{position:fixed;inset:0;display:block;width:100%;height:100%;}
+  #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:12;}
 
   /* ---- Botón de sonido ---- */
   #mute{
@@ -168,8 +179,8 @@
   }
   .logo-wrap{position:relative;display:flex;flex-direction:column;align-items:center;}
   .logoR{
-    width:clamp(120px,34vw,220px);height:auto;
-    animation:logoIn .8s cubic-bezier(.2,1.2,.3,1) both, flicker 4.2s linear .8s infinite;
+    width:clamp(120px,34vw,220px);height:auto;position:relative;
+    animation:logoIn .8s cubic-bezier(.2,1.2,.3,1) both, flickerOp 4.2s linear .8s infinite, glitch 5.5s steps(1,end) 1s infinite;
   }
   @keyframes logoIn{0%{transform:scale(.55) rotate(-3deg);opacity:0}60%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
   @keyframes flicker{
@@ -237,21 +248,85 @@
   .dc-col.dont li::before{content:"✘";position:absolute;left:0;color:#ff5a64;}
   .dc-sep{width:1px;background:linear-gradient(transparent,rgba(255,90,100,.4),transparent);}
   .act-moodboard{display:block;text-align:center;margin-top:18px;text-decoration:none;}
+
+  /* ====== TOASTS ====== */
+  #toast{position:fixed;left:50%;bottom:calc(26px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);
+    z-index:40;background:rgba(20,2,10,.93);border:1px solid rgba(255,90,100,.5);color:#ffe3e7;
+    padding:11px 18px;border-radius:30px;font-size:14px;letter-spacing:.3px;
+    box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 18px rgba(225,30,40,.3);
+    opacity:0;pointer-events:none;transition:opacity .25s ease,transform .25s ease;backdrop-filter:blur(6px);max-width:86vw;text-align:center;}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ====== CUENTA REGRESIVA ====== */
+  .countdown{display:flex;gap:8px;justify-content:center;margin:8px 0 2px;flex-wrap:wrap;}
+  .cd-box{min-width:56px;background:rgba(255,90,100,.08);border:1px solid rgba(255,90,100,.3);border-radius:12px;padding:8px 6px;}
+  .cd-num{font-family:Georgia,serif;font-size:clamp(20px,6vw,26px);font-weight:bold;color:#fff;line-height:1;
+    text-shadow:0 0 12px rgba(225,30,40,.7);font-variant-numeric:tabular-nums;}
+  .cd-lbl{font-size:9px;letter-spacing:1.5px;color:#c9a9b4;text-transform:uppercase;margin-top:5px;}
+  .cd-done{color:#ffd76b;font-family:Georgia,serif;font-size:18px;letter-spacing:1px;}
+
+  /* ====== SHIMMER (foil) en el título ====== */
+  .shimmer{position:relative;display:inline-block;}
+  .shimmer::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:6px;
+    background:linear-gradient(110deg,transparent 38%,rgba(255,255,255,.55) 50%,transparent 62%);
+    background-size:230% 100%;mix-blend-mode:overlay;animation:sweep 4.8s ease-in-out 1.2s infinite;}
+  @keyframes sweep{0%,55%{background-position:170% 0}100%{background-position:-70% 0}}
+
+  /* ====== Tarjeta con TILT 3D ====== */
+  #victoria{perspective:1200px;}
+  .tilt{transform-style:preserve-3d;transition:transform .12s ease-out;will-change:transform;}
+  .tilt .card-logo,.tilt .ganaste,.tilt h2,.tilt .countdown{transform:translateZ(34px);}
+  .tilt .glow3d{position:absolute;inset:0;border-radius:22px;pointer-events:none;opacity:0;
+    background:radial-gradient(circle at var(--gx,50%) var(--gy,40%),rgba(255,120,130,.22),transparent 45%);transition:opacity .2s;}
+
+  /* ====== Botón instalar app ====== */
+  .act.featured{background:linear-gradient(180deg,rgba(255,90,100,.22),rgba(160,10,20,.18));border-color:rgba(255,120,130,.7);}
+
+  /* ====== Glitch + halo del logo splash ====== */
+  .logo-wrap{position:relative;display:flex;align-items:center;justify-content:center;}
+  .logo-halo{position:absolute;left:50%;top:50%;width:150%;height:150%;transform:translate(-50%,-50%);
+    background:radial-gradient(circle,rgba(225,30,40,.5),rgba(225,30,40,0) 64%);filter:blur(8px);
+    animation:halopulse 2.6s ease-in-out infinite;pointer-events:none;z-index:-1;}
+  @keyframes halopulse{0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(.95)}50%{opacity:.9;transform:translate(-50%,-50%) scale(1.1)}}
+  @keyframes flickerOp{0%,17%,21%,54%,57%,79%,100%{opacity:1}20%{opacity:.22}55%{opacity:.55}72%,75%{opacity:.4}}
+  @keyframes glitch{
+    0%,90%,100%{filter:drop-shadow(0 0 26px rgba(225,30,40,.9)) drop-shadow(0 0 7px rgba(255,255,255,.4));transform:none;}
+    91%{filter:drop-shadow(3px 0 0 rgba(255,0,64,.9)) drop-shadow(-3px 0 0 rgba(0,220,255,.8)) drop-shadow(0 0 22px rgba(225,30,40,.7));transform:translateX(2px);}
+    94%{filter:drop-shadow(-4px 0 0 rgba(255,0,64,.9)) drop-shadow(4px 0 0 rgba(0,220,255,.8));transform:translateX(-2px) skewX(-1deg);}
+    97%{filter:drop-shadow(0 0 26px rgba(225,30,40,.9));transform:none;}
+  }
+
+  /* ====== Botones: foco accesible + brillo ====== */
+  .btn:focus-visible,.act:focus-visible,#mute:focus-visible{outline:2px solid #ffd76b;outline-offset:3px;}
+  .btn::after{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at 50% 0,rgba(255,255,255,.25),transparent 60%);opacity:0;transition:opacity .25s;}
+  .btn{position:relative;overflow:hidden;}
+  .btn:hover::after{opacity:1;}
+
+  /* ====== Reduce motion (accesibilidad) ====== */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001s !important;animation-iteration-count:1 !important;transition-duration:.06s !important;}
+    .shimmer::after,.logo-halo{display:none;}
+  }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
+<canvas id="fx" aria-hidden="true"></canvas>
 <button id="mute" aria-label="Sonido">🔊</button>
 
 <!-- Splash de entrada -->
 <div id="splash" class="overlay splash">
   <div class="logo-wrap">
+    <span class="logo-halo"></span>
     <img class="logoR" src="logo-r.png?v=1" alt="Logo R" draggable="false">
   </div>
   <div class="splash-13">XIII</div>
-  <div class="splash-sub">Trece años · Una noche</div>
+  <div class="splash-sub" id="splashSub"></div>
   <div class="splash-tip">toca para entrar</div>
 </div>
+
+<!-- Toast -->
+<div id="toast" role="status" aria-live="polite"></div>
 
 <!-- HUD -->
 <div id="hud" class="hidden">
@@ -282,18 +357,26 @@
 
 <!-- Pantalla de victoria / invitación -->
 <div id="victoria" class="overlay hidden">
-  <div class="tarjeta">
+  <div class="tarjeta tilt" id="tarjeta">
+    <span class="glow3d" id="glow3d"></span>
     <img class="card-logo" src="logo-r.png?v=1" alt="Logo R" draggable="false">
+    <div id="estasName" class="tema" style="color:#ffd76b;letter-spacing:2px"></div>
     <div class="ganaste">¡SOBREVIVISTE LA NOCHE!</div>
     <div class="estas">Cruzaste 13 años de mala suerte.<br>Estás oficialmente invitado(a) a:</div>
-    <h2>13.º Aniversario</h2>
+    <h2><span class="shimmer">13.º Aniversario</span></h2>
     <div class="tema">Terror · Drama · Chic</div>
+
+    <div class="countdown" id="countdown" aria-label="Cuenta regresiva al evento"></div>
+    <div class="tema" id="stat" style="margin-top:8px;color:#c9a9b4;min-height:14px"></div>
     <div class="linea"></div>
 
     <div class="dato">
       <div class="ic">📍</div>
       <div class="txt"><b>Dónde</b><span>Jr. El Bucaré N.° 125<br>Urb. Camacho — La Molina, Lima</span>
-        <div class="acts"><a class="act" id="mapsBtn" target="_blank" rel="noopener">🗺️ Ver en el mapa</a></div>
+        <div class="acts">
+          <a class="act" id="mapsBtn" target="_blank" rel="noopener">🗺️ Ver en el mapa</a>
+          <button class="act" id="copyDir">⧉ Copiar dirección</button>
+        </div>
       </div>
     </div>
 
@@ -323,6 +406,10 @@
     </div>
 
     <div class="linea"></div>
+    <div class="acts" style="justify-content:center">
+      <button class="act" id="shareBtn">↗ Compartir</button>
+      <button class="act featured" id="installBtn" hidden>⤓ Instalar app</button>
+    </div>
     <p class="firma">«Toma una captura para no perder los datos.»</p>
     <button class="btn btn-sec" id="otra">↺ jugar otra vez</button>
   </div>
@@ -367,10 +454,18 @@
   "use strict";
   const cv = document.getElementById('game');
   const ctx = cv.getContext('2d');
+  const fxcv = document.getElementById('fx');
+  const fxctx = fxcv.getContext('2d');
+  const reduce = (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || false;
+  const lowEnd = (navigator.hardwareConcurrency||4) <= 4;
 
   // ---------- Estado del juego (declarado antes de resize para evitar TDZ) ----------
   let dist, speed, lives, invuln, shake;
   let player=null, obstacles=[], bats=[], spawnX, jumps;
+  // WOW: partículas (pool reutilizado), coleccionables, efectos
+  let parts=[], embers=[], tokens=[], tokenX=0;
+  let score=0, combo=0, comboT=0, slowmo=1, hitFlash=0, lightning=null, lightTimer=5, progPop=0;
+  let bestCombo = +(localStorage.getItem('xiii_bestcombo')||0) || 0;
 
   // ---------- Dimensiones responsivas ----------
   let W=0,H=0,DPR=1,GROUND=0,SCALE=1;
@@ -380,6 +475,9 @@
     cv.width = Math.floor(W*DPR); cv.height = Math.floor(H*DPR);
     cv.style.width=W+'px'; cv.style.height=H+'px';
     ctx.setTransform(DPR,0,0,DPR,0,0);
+    fxcv.width = Math.floor(W*DPR); fxcv.height = Math.floor(H*DPR);
+    fxcv.style.width=W+'px'; fxcv.style.height=H+'px';
+    fxctx.setTransform(DPR,0,0,DPR,0,0);
     SCALE = Math.min(Math.max(Math.min(W,H)/520, .62), 1.25);
     GROUND = H - Math.max(70, H*0.16);
     // al rotar/redimensionar, mantener al personaje proporcionado y sobre el piso
@@ -396,6 +494,7 @@
   let spriteOK=false;
   sprite.onload = ()=>{ spriteOK=true; };
   sprite.src = 'personaje.png?v=3';   // ?v fuerza recarga si el navegador la tenía cacheada
+  const logoImg = new Image(); logoImg.src = 'logo-r.png?v=1';
 
   // ---------- Motor de audio (Web Audio API, sin archivos) ----------
   const SFX = (function(){
@@ -443,6 +542,9 @@
       jump(){ tone(330,0.18,'square',0.25,620); },
       djump(){ tone(520,0.16,'square',0.22,880); tone(660,0.12,'triangle',0.12,990); },
       hit(){ noise(0.25,0.4,'lowpass',900); tone(140,0.3,'sawtooth',0.3,60); },
+      collect(n){ const b=760+Math.min(n||0,8)*60; tone(b,0.1,'triangle',0.2,b*1.5); tone(b*1.5,0.08,'sine',0.1,b*2); },
+      near(){ tone(240,0.22,'sine',0.18,90); },
+      thunder(){ noise(0.7,0.32,'lowpass',260); setTimeout(()=>{ noise(0.5,0.22,'lowpass',150); tone(48,0.5,'sine',0.18,30); },110); },
       dead(){
         if(!ac||muted) return;
         [392,330,262,180].forEach((f,i)=> setTimeout(()=>tone(f,0.4,'sawtooth',0.28,f*0.6), i*150));
@@ -513,6 +615,8 @@
     player={ x:W*0.22, y:GROUND, vy:0, w:64*SCALE, h:116*SCALE, onGround:true };
     obstacles=[]; bats=[];
     spawnX = W + 380;   // pequeño respiro antes del primer obstáculo
+    score=0; combo=0; comboT=0; slowmo=1; hitFlash=0; progPop=0;
+    tokens=[]; tokenX=W+700; parts.length=0;
     setVidas();
   }
 
@@ -541,8 +645,10 @@
     if(state==='menu'||state==='dead'||state==='win') return;
     if(player.onGround){
       player.vy = -13.5*Math.sqrt(SCALE); player.onGround=false; jumps=1; SFX.fx.jump();
+      emit(player.x, GROUND, 'dust', 8); buzz(12);
     } else if(jumps<2){
       player.vy = -11.5*Math.sqrt(SCALE); jumps=2; SFX.fx.djump();   // doble salto
+      emit(player.x, player.y-player.h*0.4, 'petal', 9); buzz([8,18,8]);
     }
   }
 
@@ -551,8 +657,11 @@
   function loop(ts){
     const dt = Math.min((ts-last)/16.67, 2.2); last=ts;
     try{
-      if(state==='play') update(dt);
+      updateParts(dt);                       // atmósfera/partículas a tiempo real
+      if(state==='play') update(dt*slowmo);  // slow-mo solo afecta al juego
       draw();
+      fxctx.clearRect(0,0,W,H);              // capa superior: fuegos de victoria sobre la tarjeta
+      if(state==='win') drawParts(fxctx);
     }catch(err){ if(window.console) console.error(err); } // un error nunca congela el juego
     requestAnimationFrame(loop);
   }
@@ -563,14 +672,15 @@
     progreso(dist/META);
 
     // física jugador
+    const wasAir = !player.onGround;
     player.vy += 0.62*Math.sqrt(SCALE)*dt;
     player.y += player.vy*dt;
-    if(player.y>=GROUND){ player.y=GROUND; player.vy=0; player.onGround=true; jumps=0; }
+    if(player.y>=GROUND){ player.y=GROUND; player.vy=0; player.onGround=true; jumps=0; if(wasAir) emit(player.x,GROUND,'dust',10); }
 
-    // generar obstáculos (deja una pista limpia hacia la mansión al final)
-    if(dist < META-700) spawn(dt);
+    // generar obstáculos + coleccionables (deja una pista limpia hacia la celebración)
+    if(dist < META-700){ spawn(dt); spawnTokens(dt); }
 
-    // mover obstáculos + colisión (AABB con caja de impacto indulgente)
+    // mover obstáculos + colisión + near-miss
     const pHalf=player.w*0.30, pTop=player.y-player.h, pBot=player.y;
     for(const o of obstacles){
       o.x -= speed*dt;
@@ -581,8 +691,21 @@
           o.hit=true; golpe();
         }
       }
+      if(!o.hit && !o.passed && o.x < player.x){ o.passed=true;
+        const clear=(o.y-o.h)-player.y;
+        if(!player.onGround && clear>0 && clear < 36*SCALE) nearMiss(o);
+      }
     }
     obstacles = obstacles.filter(o=>o.x > -80);
+
+    // coleccionables "13"
+    const cx=player.x, cy=player.y-player.h*0.5;
+    for(const tk of tokens){ tk.x-=speed*dt;
+      const dx=tk.x-cx, dy=tk.y-cy, rr=tk.r+player.w*0.45;
+      if(dx*dx+dy*dy < rr*rr){ tk._dead=true; combo++; comboT=70; score+=10*Math.max(1,combo);
+        if(combo>bestCombo) bestCombo=combo; emit(tk.x,tk.y,'spark',10); SFX.fx.collect(combo); buzz(10); }
+    }
+    if(tokens.length) tokens=tokens.filter(tk=>!tk._dead && tk.x>-40);
 
     // murciélagos decorativos al fondo
     if(Math.random()<0.02) bats.push({x:W+20,y:Math.random()*H*0.45+30,s:(1+Math.random())*speed*0.5,f:Math.random()*6});
@@ -596,8 +719,14 @@
     if(state==='play' && dist>=META){ win(); }
   }
 
+  let lastNear=0;
+  function nearMiss(o){
+    const t=performance.now(); if(reduce || t-lastNear<1500) return; lastNear=t;
+    slowmo=0.45; score+=5; progPop=14; SFX.fx.near(); buzz(22); emit(o.x, o.y-o.h, 'spark', 8);
+  }
   function golpe(){
-    lives--; setVidas(); invuln=70; shake=14; SFX.fx.hit();
+    lives--; setVidas(); invuln=70; shake=14; hitFlash=0.6; combo=0; SFX.fx.hit();
+    emit(player.x, player.y-player.h*0.5, 'spark', 14); buzz([40,30,60]);
     if(lives<=0) dead();
   }
 
@@ -665,8 +794,14 @@
     // obstáculos (dibujados)
     for(const o of obstacles) drawObstacle(o);
 
+    // coleccionables "13"
+    if(tokens.length) drawTokens(ctx);
+
     // jugador
     drawPlayer();
+
+    // partículas (pétalos, polvo, brasas, chispas)
+    drawParts(ctx);
 
     // aviso al acercarse a la meta (deja claro dónde termina el camino)
     if(state==='play' && dist > META-1000){
@@ -684,6 +819,32 @@
     fg.addColorStop(0,'rgba(180,150,200,0)'); fg.addColorStop(1,'rgba(150,120,180,.12)');
     ctx.fillStyle=fg; ctx.fillRect(-20,H-120,W+40,140);
 
+    // relámpago + viñeta cinematográfica + color grading
+    drawLightning(ctx);
+    drawVignette(ctx);
+
+    // flash rojo al recibir golpe
+    if(hitFlash>0){ ctx.fillStyle='rgba(190,10,20,'+Math.min(0.5,hitFlash*0.5)+')'; ctx.fillRect(-20,-20,W+40,H+40); }
+
+    // HUD de juego: número 13→0 + puntaje + combo
+    if(state==='play') drawPlayHUD();
+
+    ctx.restore();
+  }
+
+  function drawPlayHUD(){
+    const rem=Math.max(0,Math.ceil(13*(1-dist/META)));
+    ctx.save(); ctx.textAlign='center';
+    const pop=1+(progPop>0?0.12*(progPop/14):0);
+    ctx.globalAlpha=0.09; ctx.fillStyle='#ff5a64'; ctx.textBaseline='middle';
+    ctx.font='bold '+Math.round(Math.min(W,H)*0.42*pop)+'px Georgia,serif';
+    ctx.fillText(rem, W/2, H*0.44);
+    ctx.globalAlpha=0.95; ctx.fillStyle='#fff'; ctx.textBaseline='top';
+    ctx.shadowColor='rgba(225,30,40,.85)'; ctx.shadowBlur=10;
+    ctx.font='bold '+Math.round(18*SCALE)+'px Georgia,serif';
+    ctx.fillText('✦ '+score, W/2, H*0.075);
+    if(comboT>0 && combo>1){ ctx.fillStyle='#ffd76b'; ctx.font='bold '+Math.round(15*SCALE)+'px Georgia,serif';
+      ctx.fillText('COMBO ×'+combo, W/2, H*0.075+24*SCALE); }
     ctx.restore();
   }
 
@@ -840,6 +1001,116 @@
     ctx.quadraticCurveTo(-w*0.09,-h*0.87,0,-h*0.8); ctx.fill();
   }
 
+  // ====== WOW: hápticos + partículas + atmósfera ======
+  function buzz(p){ if(!reduce && navigator.vibrate && !SFX.isMuted()){ try{ navigator.vibrate(p); }catch(e){} } }
+
+  const PETAL=['#e0232a','#8a1014','#ff7a85','#1a0a0e','#ffd76b']; // paleta terror-chic (sin verdes/azules)
+  function emit(x,y,kind,n){
+    const cap = reduce?0:(lowEnd?70:130);
+    for(let i=0;i<n;i++){
+      if(parts.length>=cap) break;
+      const a=Math.random()*Math.PI*2;
+      if(kind==='petal'){
+        parts.push({x,y,vx:Math.cos(a)*(0.6+Math.random()*1.8),vy:-1-Math.random()*2.4,g:0.05,life:1,
+          fade:0.011+Math.random()*0.011,r:2.5+Math.random()*3,rot:Math.random()*7,vr:(Math.random()-.5)*0.3,
+          c:PETAL[(Math.random()*PETAL.length)|0],t:'petal'});
+      } else if(kind==='dust'){
+        parts.push({x:x+(Math.random()-.5)*14,y,vx:(Math.random()-.5)*1.6,vy:-Math.random()*1.1,g:0.04,life:1,
+          fade:0.03+Math.random()*0.02,r:1.5+Math.random()*2.5,c:'rgba(185,165,175,0.6)',t:'dust'});
+      } else {
+        parts.push({x,y,vx:Math.cos(a)*(1+Math.random()*3),vy:Math.sin(a)*(1+Math.random()*3)-1.2,g:0.06,life:1,
+          fade:0.016+Math.random()*0.02,r:1+Math.random()*2.4,c:PETAL[(Math.random()*PETAL.length)|0],t:'spark'});
+      }
+    }
+  }
+  function updateParts(dt){
+    for(const p of parts){ p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=p.g*dt;
+      if(p.t==='petal'){ p.vx+=Math.sin(p.y*0.03)*0.04*dt; p.rot+=p.vr*dt; } p.life-=p.fade*dt*16; }
+    if(parts.length) parts=parts.filter(p=>p.life>0 && p.y<H+40);
+    const ecap = reduce?0:(lowEnd?22:Math.round(42*Math.min(1,(W*H)/(420*820))));
+    if(embers.length<ecap && Math.random()<0.55){
+      embers.push({x:Math.random()*W,y:H+8,vx:(Math.random()-.5)*0.2,vy:-(0.2+Math.random()*0.5)*Math.sqrt(SCALE),
+        r:1+Math.random()*2,life:1,fade:0.0018+Math.random()*0.0024,hue:16+Math.random()*24});
+    }
+    for(const e of embers){ e.x+=e.vx*dt; e.y+=e.vy*dt*(state==='play'?1.5:1); e.vx+=Math.sin((e.x+e.y)*0.01)*0.008*dt; e.life-=e.fade*dt*16; }
+    if(embers.length) embers=embers.filter(e=>e.life>0 && e.y>-20);
+    if(!reduce){
+      lightTimer-=dt/60;
+      if(lightTimer<=0 && !lightning){ lightning={t:0,dur:40+Math.random()*16,seed:Math.random()*1000}; lightTimer=7+Math.random()*8; if(state==='play') SFX.fx.thunder(); }
+    }
+    if(lightning){ lightning.t+=dt; if(lightning.t>lightning.dur) lightning=null; }
+    if(hitFlash>0) hitFlash-=0.045*dt;
+    if(comboT>0) comboT-=dt;
+    if(progPop>0) progPop-=dt;
+    slowmo += (1-slowmo)*0.05*dt; if(slowmo>0.995) slowmo=1;
+  }
+  function drawParts(c){
+    c.save(); c.globalCompositeOperation='lighter';
+    for(const e of embers){ c.globalAlpha=Math.max(0,e.life)*0.8; c.fillStyle='hsl('+e.hue+',90%,60%)'; c.beginPath(); c.arc(e.x,e.y,e.r,0,7); c.fill(); }
+    for(const p of parts){ if(p.t==='spark'){ c.globalAlpha=Math.max(0,p.life); c.fillStyle=p.c; c.beginPath(); c.arc(p.x,p.y,p.r,0,7); c.fill(); } }
+    c.restore(); c.save();
+    for(const p of parts){
+      if(p.t==='petal'){ c.globalAlpha=Math.max(0,p.life)*0.95; c.fillStyle=p.c; c.save(); c.translate(p.x,p.y); c.rotate(p.rot); c.beginPath(); c.ellipse(0,0,p.r,p.r*0.5,0,0,7); c.fill(); c.restore(); }
+      else if(p.t==='dust'){ c.globalAlpha=Math.max(0,p.life)*0.6; c.fillStyle=p.c; c.beginPath(); c.arc(p.x,p.y,p.r,0,7); c.fill(); }
+    }
+    c.restore(); c.globalAlpha=1;
+  }
+  function drawLightning(c){
+    if(!lightning) return;
+    const p=lightning.t/lightning.dur;
+    const flash = reduce ? Math.max(0,0.28*(1-p))
+      : Math.max(0, Math.exp(-Math.pow((p-0.05)*9,2))*0.55 + Math.exp(-Math.pow((p-0.22)*7,2))*0.32);
+    if(flash>0.01){ c.save(); c.globalCompositeOperation='lighter'; c.fillStyle='rgba(210,220,255,'+flash+')'; c.fillRect(-30,-30,W+60,H+60); c.restore(); }
+    if(!reduce && p<0.16){
+      c.save(); c.strokeStyle='rgba(255,255,255,'+(0.85*(1-p/0.16))+')'; c.lineWidth=Math.max(1.5,2*SCALE);
+      c.shadowColor='rgba(180,200,255,.9)'; c.shadowBlur=16;
+      let x=W*(0.15+(lightning.seed%60)/100), y=-10; c.beginPath(); c.moveTo(x,y);
+      for(let i=1;i<=8;i++){ x+=Math.sin(lightning.seed+i*1.3)*W*0.05; y+=(GROUND+10)/8; c.lineTo(x,y); }
+      c.stroke(); c.restore();
+    }
+  }
+  function drawVignette(c){
+    const v=c.createRadialGradient(W/2,H*0.46,Math.min(W,H)*0.30,W/2,H*0.5,Math.max(W,H)*0.74);
+    v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.5)');
+    c.fillStyle=v; c.fillRect(-20,-20,W+40,H+40);
+    if(state==='play'){ // color grading: vira a rojo cerca de la meta
+      const grade=Math.max(0,(dist-META*0.45)/(META*0.55))*0.22;
+      if(grade>0.01){ c.save(); c.globalCompositeOperation='soft-light'; c.fillStyle='rgba(225,30,40,'+grade+')'; c.fillRect(-20,-20,W+40,H+40); c.restore(); }
+    }
+  }
+
+  // coleccionables "13"
+  function spawnTokens(dt){
+    tokenX-=speed*dt;
+    if(tokenX<=W){
+      const n=2+(Math.random()*2|0), baseY=GROUND-(74+Math.random()*64)*SCALE;
+      for(let i=0;i<n;i++) tokens.push({x:W+40+i*36*SCALE, y:baseY-Math.sin((n>1?i/(n-1):0.5)*Math.PI)*24*SCALE, r:11*SCALE, ph:Math.random()*6});
+      tokenX=W+(540+Math.random()*460)*(0.9+speed/16);
+    }
+  }
+  function drawTokens(c){
+    for(const tk of tokens){
+      const bob=Math.sin(performance.now()*0.005+tk.ph)*3;
+      c.save(); c.translate(tk.x,tk.y+bob);
+      const g=c.createRadialGradient(0,0,1,0,0,tk.r*2.2); g.addColorStop(0,'rgba(255,215,110,.8)'); g.addColorStop(1,'rgba(255,140,40,0)');
+      c.globalCompositeOperation='lighter'; c.fillStyle=g; c.beginPath(); c.arc(0,0,tk.r*2.2,0,7); c.fill();
+      c.globalCompositeOperation='source-over'; c.fillStyle='#1a0a0e'; c.beginPath(); c.arc(0,0,tk.r,0,7); c.fill();
+      c.strokeStyle='#ffd76b'; c.lineWidth=2; c.stroke();
+      c.fillStyle='#ffd76b'; c.font='bold '+Math.round(tk.r*1.05)+'px Georgia,serif'; c.textAlign='center'; c.textBaseline='middle'; c.fillText('13',0,1);
+      c.restore();
+    }
+  }
+
+  // fuegos artificiales de victoria (mismo pool, pétalos terror-chic)
+  function fireworks(){
+    if(reduce){ emit(W/2,H*0.4,'petal',24); return; }
+    let n=0; const iv=setInterval(()=>{ if(n++>6 || state!=='win'){ clearInterval(iv); return; }
+      emit(W*(0.2+Math.random()*0.6), H*(0.18+Math.random()*0.3), 'spark', 24);
+      emit(W*(0.2+Math.random()*0.6), H*(0.18+Math.random()*0.3), 'petal', 12);
+      SFX.fx.collect(2);
+    }, 240);
+  }
+
   // ---------- HUD ----------
   const relleno=document.getElementById('relleno');
   const vidasEl=document.getElementById('vidas');
@@ -872,10 +1143,18 @@
   function start(){
     reset(); state='play';
     hide(elSplash); hide(elInicio); hide(elDerrota); hide(elVictoria); hide(elDresscode); show(elHud);
+    if(typeof cdIv!=='undefined') clearInterval(cdIv);
+    if(typeof card!=='undefined' && card) card.style.transform='';
     SFX.ensure(); SFX.ambient(true);
   }
-  function dead(){ state='dead'; hide(elHud); show(elDerrota); SFX.ambient(false); SFX.fx.dead(); }
-  function win(){ state='win'; hide(elHud); show(elVictoria); SFX.ambient(false); SFX.fx.win(); }
+  function dead(){ state='dead'; hide(elHud); show(elDerrota); SFX.ambient(false); SFX.fx.dead(); buzz([80,40,80,40,160]); }
+  function win(){
+    state='win'; hide(elHud); show(elVictoria); SFX.ambient(false); SFX.fx.win();
+    fireworks(); startCountdown(); buzz([20,40,20,40,120]);
+    if(bestCombo>0){ try{ localStorage.setItem('xiii_bestcombo', bestCombo); }catch(e){} }
+    const st=document.getElementById('stat');
+    if(st) st.textContent = score>0 ? ('Puntaje '+score+'  ·  Mejor combo ×'+bestCombo) : '';
+  }
 
   // --- Panel Dress code (se superpone a la invitación) ---
   let dcOpen=false;
@@ -905,6 +1184,99 @@
     document.getElementById('icsBtn').href='data:text/calendar;charset=utf-8,'+encodeURIComponent(ics);
   })();
 
+  // ====== UX premium: countdown, copiar, compartir, instalar, tilt 3D ======
+  const DIR='Jr. El Bucaré N.°125, Urbanización Camacho, La Molina, Lima';
+  const EVENT_MS=Date.UTC(2026,6,3,16,0,0);  // vie 3 jul 2026 · 11:00 a.m. Lima (UTC-5)
+  let cdIv=null;
+  function startCountdown(){ updateCountdown(); clearInterval(cdIv); cdIv=setInterval(updateCountdown,1000); }
+  function updateCountdown(){
+    const el=document.getElementById('countdown'); if(!el) return;
+    let ms=EVENT_MS-Date.now();
+    if(ms<=0){ el.innerHTML='<span class="cd-done">¡La noche ha llegado!</span>'; clearInterval(cdIv); return; }
+    const s=Math.floor(ms/1000), d=Math.floor(s/86400), h=Math.floor(s%86400/3600), m=Math.floor(s%3600/60), ss=s%60;
+    el.innerHTML=[['DÍAS',d],['HORAS',h],['MIN',m],['SEG',ss]].map(([l,v])=>
+      '<div class="cd-box"><div class="cd-num">'+String(v).padStart(2,'0')+'</div><div class="cd-lbl">'+l+'</div></div>').join('');
+  }
+
+  let toastT;
+  function toast(msg){ const t=document.getElementById('toast'); if(!t) return; t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2200); }
+
+  document.getElementById('copyDir').addEventListener('click', async e=>{ e.stopPropagation();
+    try{ await navigator.clipboard.writeText(DIR); toast('Dirección copiada ✓'); }
+    catch(_){ toast(DIR); }
+  });
+
+  // Compartir con imagen-tarjeta generada en canvas (offscreen, una sola vez)
+  let shareBlob=null;
+  function buildShareCard(){
+    return new Promise(resolve=>{
+      try{
+        const W2=1080,H2=1350,c=document.createElement('canvas'); c.width=W2;c.height=H2; const x=c.getContext('2d');
+        const g=x.createLinearGradient(0,0,0,H2); g.addColorStop(0,'#0c0118'); g.addColorStop(.5,'#1a0220'); g.addColorStop(1,'#2a0414'); x.fillStyle=g; x.fillRect(0,0,W2,H2);
+        const mg=x.createRadialGradient(820,300,40,820,300,420); mg.addColorStop(0,'rgba(255,120,120,.3)'); mg.addColorStop(1,'rgba(255,120,120,0)'); x.fillStyle=mg; x.fillRect(0,0,W2,640);
+        x.fillStyle='#e9b7b7'; x.beginPath(); x.arc(820,300,120,0,7); x.fill();
+        const draw2=()=>{
+          if(logoImg.complete && logoImg.naturalWidth){ const lw=300, lh=lw/((logoImg.naturalWidth/logoImg.naturalHeight)||1.25); x.save(); x.shadowColor='rgba(225,30,40,.85)'; x.shadowBlur=44; x.drawImage(logoImg,W2/2-lw/2,150,lw,lh); x.restore(); }
+          x.textAlign='center';
+          x.fillStyle='#ffd76b'; x.font='bold 44px Georgia,serif'; x.fillText('¡ESTÁS INVITADO(A)!',W2/2,600);
+          x.fillStyle='#e0232a'; x.shadowColor='rgba(225,30,40,.8)'; x.shadowBlur=30; x.font='bold 92px Georgia,serif'; x.fillText('13.º Aniversario',W2/2,716); x.shadowBlur=0;
+          x.fillStyle='#e7b8c0'; x.font='34px Georgia,serif'; x.fillText('TERROR · DRAMA · CHIC',W2/2,778);
+          x.strokeStyle='rgba(255,90,100,.5)'; x.lineWidth=2; x.beginPath(); x.moveTo(260,838); x.lineTo(820,838); x.stroke();
+          x.fillStyle='#fff'; x.font='40px Georgia,serif'; x.fillText('Viernes 3 de julio · 11:00 a.m.',W2/2,918);
+          x.fillStyle='#c3b4cc'; x.font='30px Georgia,serif'; x.fillText('Jr. El Bucaré N.° 125',W2/2,978); x.fillText('Urb. Camacho — La Molina, Lima',W2/2,1022);
+          const cols=['#3c3d41','#6e4a2d','#8a1014','#e0232a','#ffffff','#c9ccce'],sw=64,gp=18,tot=cols.length*sw+(cols.length-1)*gp,sx=W2/2-tot/2;
+          cols.forEach((col,i)=>{ x.fillStyle=col; const px=sx+i*(sw+gp),py=1110,r=12; x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+sw,py,px+sw,py+sw,r); x.arcTo(px+sw,py+sw,px,py+sw,r); x.arcTo(px,py+sw,px,py,r); x.arcTo(px,py,px+sw,py,r); x.closePath(); x.fill(); });
+          x.fillStyle='#9a8aa4'; x.font='italic 28px Georgia,serif'; x.fillText('Cruza la noche del número maldito.',W2/2,1268);
+          c.toBlob(b=>{ shareBlob=b; resolve(b); },'image/png');
+        };
+        if(logoImg.complete) draw2(); else { logoImg.addEventListener('load',draw2,{once:true}); setTimeout(draw2,500); }
+      }catch(_){ resolve(null); }
+    });
+  }
+  document.getElementById('shareBtn').addEventListener('click', async e=>{ e.stopPropagation();
+    const text='¡Estás invitado(a) al 13.º Aniversario — Terror, Drama & Chic! Viernes 3 de julio, 11:00 a.m., La Molina.';
+    try{
+      const blob = shareBlob || await buildShareCard();
+      if(blob && navigator.canShare){ const file=new File([blob],'invitacion-xiii.png',{type:'image/png'});
+        if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:'13.º Aniversario',text}); return; } }
+      if(navigator.share){ await navigator.share({title:'13.º Aniversario',text,url:location.href}); return; }
+      await navigator.clipboard.writeText(text+' '+location.href); toast('Invitación copiada ✓');
+    }catch(err){ if(err && err.name!=='AbortError') toast('No se pudo compartir'); }
+  });
+
+  // PWA instalable
+  let deferredPrompt=null; const installBtn=document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', e=>{ e.preventDefault(); deferredPrompt=e; if(installBtn) installBtn.hidden=false; });
+  if(installBtn) installBtn.addEventListener('click', async e=>{ e.stopPropagation();
+    if(!deferredPrompt) return; deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(_){}
+    deferredPrompt=null; installBtn.hidden=true;
+  });
+  if('serviceWorker' in navigator) window.addEventListener('load', ()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+
+  // Tilt 3D de la tarjeta (mouse + giroscopio) con lerp
+  const card=document.getElementById('tarjeta'), glow3d=document.getElementById('glow3d');
+  let tRX=0,tRY=0,tTX=0,tTY=0;
+  function tiltLoop(){ if(card){ tRX+=(tTX-tRX)*0.12; tRY+=(tTY-tRY)*0.12; card.style.transform='rotateX('+tRX.toFixed(2)+'deg) rotateY('+tRY.toFixed(2)+'deg)'; } requestAnimationFrame(tiltLoop); }
+  if(!reduce && card) requestAnimationFrame(tiltLoop);
+  function setGlow(gx,gy){ if(glow3d){ glow3d.style.setProperty('--gx',gx+'%'); glow3d.style.setProperty('--gy',gy+'%'); glow3d.style.opacity=1; } }
+  elVictoria.addEventListener('pointermove', e=>{ if(reduce||dcOpen||!card) return; const r=card.getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width, py=(e.clientY-r.top)/r.height; tTY=(px-0.5)*12; tTX=(0.5-py)*10; setGlow(px*100,py*100); });
+  elVictoria.addEventListener('pointerleave', ()=>{ tTX=0; tTY=0; if(glow3d) glow3d.style.opacity=0; });
+  window.addEventListener('deviceorientation', e=>{ if(reduce||state!=='win'||dcOpen) return;
+    tTY=Math.max(-12,Math.min(12,(e.gamma||0)*0.35)); tTX=Math.max(-10,Math.min(10,-((e.beta||0)-40)*0.22)); setGlow(50+tTY*3,50-tTX*3); });
+
+  // Easter egg: tocar el logo 13 veces
+  let logoTaps=0;
+  function logoTap(){ if(++logoTaps===13){ toast('XIII desbloqueado · la suerte cambió'); emit(W/2,H*0.4,'petal',26); SFX.ensure(); SFX.fx.collect(6); try{ localStorage.setItem('xiii_unlocked','1'); }catch(_){} } }
+  document.querySelectorAll('.logoR,.logo-menu,.card-logo').forEach(el=> el.addEventListener('click', e=>{ logoTap(); }));
+
+  // Personalización por ?n=  (textContent evita inyección)
+  (function(){ try{ const n=new URLSearchParams(location.search).get('n'); if(n){ const el=document.getElementById('estasName'); if(el) el.textContent='Reservado para '+n.slice(0,30); } }catch(_){} })();
+
+  // Typewriter del subtítulo del splash
+  (function(){ const el=document.getElementById('splashSub'); if(!el) return; const txt='Trece años · Una noche';
+    if(reduce){ el.textContent=txt; return; } let i=0; const iv=setInterval(()=>{ el.textContent=txt.slice(0,++i); if(i>=txt.length) clearInterval(iv); },55); })();
+
   // ---------- Botón de sonido ----------
   const muteBtn=document.getElementById('mute');
   muteBtn.addEventListener('pointerdown', e=>{
@@ -932,6 +1304,9 @@
       else if(state==='menu'||state==='dead'||state==='win') start();
     }
   });
+
+  // Hook de QA (solo con ?dbg): permite verificar estados en la auditoría
+  if(location.search.indexOf('dbg')>=0){ window.__game={start,win,dead,goMenu,openDC,closeDC,state:()=>state}; }
 
   reset();                 // inicializa al personaje antes de dibujar el primer frame
   requestAnimationFrame(loop);
