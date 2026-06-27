@@ -530,8 +530,10 @@
         master = ac.createGain();
         master.gain.value = muted?0:0.9;
         master.connect(ac.destination);
+        // desbloqueo iOS: reproducir un buffer mudo dentro del gesto del usuario
+        try{ const b=ac.createBuffer(1,1,22050), s=ac.createBufferSource(); s.buffer=b; s.connect(ac.destination); s.start(0); }catch(_){}
       }
-      if(ac.state==='suspended' && ac.resume) ac.resume(); // iOS/Safari arranca suspendido
+      if(ac.state==='suspended' && ac.resume){ try{ ac.resume(); }catch(_){} } // iOS/Safari arranca suspendido
     }
     function now(){ return ac.currentTime; }
     // tono simple con envolvente
@@ -568,29 +570,33 @@
       collect(n){ const b=760+Math.min(n||0,8)*60; tone(b,0.1,'triangle',0.2,b*1.5); tone(b*1.5,0.08,'sine',0.1,b*2); },
       near(){ tone(240,0.22,'sine',0.18,90); },
       thunder(){ noise(0.7,0.32,'lowpass',260); setTimeout(()=>{ noise(0.5,0.22,'lowpass',150); tone(48,0.5,'sine',0.18,30); },110); },
-      // Voz/susurro tenebroso sintetizado (Web Audio) — suena en TODOS los dispositivos
+      // Voz/lamento tenebroso sintetizado (Web Audio) — suena en TODOS los dispositivos
       whisper(){
         if(!ac||muted) return;
-        const t=now(), dur=2.6;
+        const t=now()+0.08, dur=2.8;                    // lookahead para iOS
+        const g=ac.createGain(); g.connect(master);
+        g.gain.setValueAtTime(0.0001,t);
+        g.gain.exponentialRampToValueAtTime(0.34,t+0.4); // bien audible en parlante de cel
+        g.gain.exponentialRampToValueAtTime(0.18,t+1.6);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+        // fuente vocal: sierra grave con vibrato (más audible que solo ruido)
+        const o=ac.createOscillator(); o.type='sawtooth'; o.frequency.setValueAtTime(96,t);
+        const lfo=ac.createOscillator(), lg=ac.createGain(); lfo.frequency.value=5.5; lg.gain.value=4;
+        lfo.connect(lg); lg.connect(o.frequency);
         // ruido susurrante
         const len=Math.floor(ac.sampleRate*dur), buf=ac.createBuffer(1,len,ac.sampleRate), d=buf.getChannelData(0);
-        for(let i=0;i<len;i++) d[i]=(Math.random()*2-1);
-        const src=ac.createBufferSource(); src.buffer=buf;
-        const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t);
-        g.gain.exponentialRampToValueAtTime(0.13,t+0.45);
-        g.gain.exponentialRampToValueAtTime(0.07,t+1.4);
-        g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-        // formantes vocales que se mueven (como si "hablara")
-        const mk=(f0,f1,q)=>{ const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=q;
-          bp.frequency.setValueAtTime(f0,t); bp.frequency.linearRampToValueAtTime(f1,t+0.9); bp.frequency.linearRampToValueAtTime(f0*0.9,t+1.9);
-          const fg=ac.createGain(); fg.gain.value=0.6; src.connect(bp); bp.connect(fg); fg.connect(g); };
-        mk(430,640,7); mk(950,1320,9); mk(2500,2750,11);
-        g.connect(master);
+        for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+        const ns=ac.createBufferSource(); ns.buffer=buf;
+        // formantes vocales móviles (vocal "ah" -> "oo", como si hablara)
+        const mk=(f0,f1,q,gain)=>{ const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=q;
+          bp.frequency.setValueAtTime(f0,t); bp.frequency.linearRampToValueAtTime(f1,t+1.0); bp.frequency.linearRampToValueAtTime(f0*0.85,t+2.1);
+          const fg=ac.createGain(); fg.gain.value=gain; o.connect(bp); ns.connect(bp); bp.connect(fg); fg.connect(g); };
+        mk(520,700,8,1.0); mk(1080,900,10,0.7); mk(2600,2500,12,0.4);
         // sub-drón grave
-        const o=ac.createOscillator(); o.type='sine'; o.frequency.value=68; const og=ac.createGain();
-        og.gain.setValueAtTime(0.0001,t); og.gain.exponentialRampToValueAtTime(0.09,t+0.5); og.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-        o.connect(og); og.connect(master);
-        src.start(t); src.stop(t+dur+0.05); o.start(t); o.stop(t+dur+0.05);
+        const sub=ac.createOscillator(); sub.type='sine'; sub.frequency.value=56; const sg=ac.createGain();
+        sg.gain.setValueAtTime(0.0001,t); sg.gain.exponentialRampToValueAtTime(0.18,t+0.5); sg.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+        sub.connect(sg); sg.connect(master);
+        o.start(t); o.stop(t+dur+0.05); ns.start(t); ns.stop(t+dur+0.05); lfo.start(t); lfo.stop(t+dur+0.05); sub.start(t); sub.stop(t+dur+0.05);
       },
       dead(){
         if(!ac||muted) return;
@@ -1184,7 +1190,7 @@
     if(state!=='splash') return;
     clearTimeout(splashTimer);
     state='menu'; hide(elSplash); show(elInicio);
-    SFX.ensure(); SFX.ambient(true); SFX.fx.whisper(); speakCreepy();   // sonido + voz desde que se entra
+    SFX.ensure();   // el desbloqueo + voz lo dispara unlockAudio() en el primer gesto
   }
 
   function start(){
@@ -1353,6 +1359,16 @@
     if(state==='splash'){ goMenu(); return; }
     if(state==='play'){ e.preventDefault(); jump(); }
   }
+  // Desbloqueo de audio + voz tenebrosa en el PRIMER gesto del usuario (cualquier pantalla/tecla).
+  // En captura, así corre antes que onTap y garantiza el "gesto" que iOS exige.
+  let audioUnlocked=false;
+  function unlockAudio(){
+    SFX.ensure();
+    if(audioUnlocked) return; audioUnlocked=true;
+    SFX.ambient(true); SFX.fx.whisper(); speakCreepy();
+  }
+  ['pointerdown','touchstart','keydown'].forEach(ev=> window.addEventListener(ev, unlockAudio, {capture:true}));
+
   window.addEventListener('pointerdown', onTap, {passive:false});
   window.addEventListener('keydown', e=>{
     if(e.code==='Escape'){ if(dcOpen){ e.preventDefault(); closeDC(); } return; }
