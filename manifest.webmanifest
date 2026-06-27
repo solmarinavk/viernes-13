@@ -1,0 +1,17 @@
+{
+  "name": "13.º Aniversario — Terror, Drama & Chic",
+  "short_name": "XIII",
+  "description": "Una noche de Terror, Drama & Chic. Cruza la noche del número maldito y descubre tu invitación.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06000c",
+  "theme_color": "#0a0010",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
