@@ -562,10 +562,25 @@
       src.connect(f); f.connect(g); g.connect(master);
       src.start(t);
     }
+    // ráfaga de aire fantasmal (ruido con filtro que se desliza) — para saltos tenebrosos
+    function swoosh(f0,f1,dur,vol){
+      if(!ac||muted) return;
+      const t=now(), n=Math.floor(ac.sampleRate*dur), buf=ac.createBuffer(1,n,ac.sampleRate), d=buf.getChannelData(0);
+      for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+      const src=ac.createBufferSource(); src.buffer=buf;
+      const bp=ac.createBiquadFilter(); bp.type='bandpass'; bp.Q.value=3.5;
+      bp.frequency.setValueAtTime(f0,t); bp.frequency.exponentialRampToValueAtTime(Math.max(40,f1),t+dur);
+      const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t);
+      g.gain.exponentialRampToValueAtTime(vol||0.22,t+0.03);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      src.connect(bp); bp.connect(g); g.connect(master);
+      src.start(t); src.stop(t+dur+0.02);
+    }
     // --- efectos del juego ---
     const fx = {
-      jump(){ tone(330,0.18,'square',0.25,620); },
-      djump(){ tone(520,0.16,'square',0.22,880); tone(660,0.12,'triangle',0.12,990); },
+      // saltos con aire fantasmal (whoosh) en vez del "blip" arcade
+      jump(){ swoosh(280,1500,0.30,0.20); tone(150,0.26,'sine',0.10,330); },
+      djump(){ swoosh(700,2400,0.26,0.17); tone(300,0.22,'sine',0.08,620); tone(450,0.2,'sine',0.05,900); },
       hit(){ noise(0.25,0.4,'lowpass',900); tone(140,0.3,'sawtooth',0.3,60); },
       collect(n){ const b=760+Math.min(n||0,8)*60; tone(b,0.1,'triangle',0.2,b*1.5); tone(b*1.5,0.08,'sine',0.1,b*2); },
       near(){ tone(240,0.22,'sine',0.18,90); },
